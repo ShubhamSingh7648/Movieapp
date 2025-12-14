@@ -8,14 +8,17 @@ const {
 } = require('../controllers/userController');
 const { protect } = require('../middleware/auth');
 
-// All routes are protected
+// Apply protect middleware to all routes in this router
 router.use(protect);
 
+// Favorites routes
 router.route('/favorites')
   .get(getFavorites)
   .post(addFavorite);
 
 router.delete('/favorites/:imdbID', removeFavorite);
+
+// Profile picture route
 router.put('/profile-picture', updateProfilePicture);
 
 module.exports = router;

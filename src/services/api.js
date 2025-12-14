@@ -2,8 +2,8 @@
 const OMDB_API_KEY = "7140804c";
 const OMDB_BASE_URL = "https://www.omdbapi.com/";
 
-// Backend API
-const API_BASE_URL = "http://localhost:5000/api";
+// Backend API - Using proxy or direct URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 // Helper function to get auth token
 const getAuthToken = () => {
@@ -22,31 +22,47 @@ const authFetch = async (url, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  try {
+    console.log('Fetching:', url);
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
 
-  const data = await response.json();
+    const data = await response.json();
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Something went wrong');
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP Error: ${response.status}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
   }
-
-  return data;
 };
 
 // ============ OMDB API Functions ============
 export const getPopularMovies = async () => {
-  const response = await fetch(`${OMDB_BASE_URL}?s=Avengers&apikey=${OMDB_API_KEY}`);
-  const data = await response.json();
-  return data.Search || [];
+  try {
+    const response = await fetch(`${OMDB_BASE_URL}?s=Avengers&apikey=${OMDB_API_KEY}`);
+    const data = await response.json();
+    return data.Search || [];
+  } catch (error) {
+    console.error('OMDB API Error:', error);
+    return [];
+  }
 };
 
 export const searchMovie = async (query) => {
-  const response = await fetch(`${OMDB_BASE_URL}?s=${encodeURIComponent(query)}&apikey=${OMDB_API_KEY}`);
-  const data = await response.json();
-  return data.Search || [];
+  try {
+    const response = await fetch(`${OMDB_BASE_URL}?s=${encodeURIComponent(query)}&apikey=${OMDB_API_KEY}`);
+    const data = await response.json();
+    return data.Search || [];
+  } catch (error) {
+    console.error('OMDB API Error:', error);
+    return [];
+  }
 };
 
 // ============ Auth API Functions ============
@@ -79,7 +95,7 @@ export const updateProfile = async (name, email) => {
 export const updateProfilePicture = async (imageBase64) => {
   return authFetch(`${API_BASE_URL}/users/profile-picture`, {
     method: 'PUT',
-    body: JSON.stringify({ image: imageBase64 }),
+    body: JSON.stringify({ profilePicture: imageBase64 }),
   });
 };
 
