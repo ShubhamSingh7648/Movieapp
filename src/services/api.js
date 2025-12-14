@@ -3,7 +3,7 @@ const OMDB_API_KEY = "7140804c";
 const OMDB_BASE_URL = "https://www.omdbapi.com/";
 
 // Backend API - Using proxy or direct URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://movieapp-1-2flz.onrender.com";
 
 // Helper function to get auth token
 const getAuthToken = () => {
