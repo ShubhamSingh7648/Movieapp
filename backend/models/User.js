@@ -37,13 +37,39 @@ const userSchema = new mongoose.Schema({
       }
     }
   ],
+  playlists: [
+    {
+      name: {
+        type: String,
+        required: true,
+        trim: true
+      },
+      movies: [
+        {
+          imdbID: String,
+          Title: String,
+          Year: String,
+          Poster: String,
+          Type: String,
+          addedAt: {
+            type: Date,
+            default: Date.now
+          }
+        }
+      ],
+      createdAt: {
+        type: Date,
+        default: Date.now
+      }
+    }
+  ],
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
 
-// ✅ FIXED: async hook WITHOUT next()
+// Hash password before saving
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
 

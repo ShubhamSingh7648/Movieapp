@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/authContext";
 
 function NavBar({ onSearch }) {
@@ -7,6 +7,8 @@ function NavBar({ onSearch }) {
   const [searchQuery, setSearchQuery] = useState("");
   const { user, logout, isAuthenticated } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   
   const isActive = (path) => location.pathname === path;
   
@@ -14,28 +16,221 @@ function NavBar({ onSearch }) {
     e.preventDefault();
     if (onSearch && searchQuery.trim()) {
       onSearch(searchQuery);
+      setShowMobileSearch(false);
     }
   };
 
   const handleLogout = () => {
     logout();
     setShowProfileMenu(false);
+    setShowMobileMenu(false);
   };
 
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showProfileMenu && !event.target.closest('.profile-menu-container')) {
+        setShowProfileMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showProfileMenu]);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setShowMobileMenu(false);
+    setShowMobileSearch(false);
+  }, [location.pathname]);
+
   return (
-    <nav className="bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 px-8 py-5 shadow-2xl sticky top-0 z-50 backdrop-blur-sm">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-8">
-        {/* Logo */}
-        <Link 
-          to="/" 
-          className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-600 tracking-wider hover:scale-105 transition-transform duration-300 whitespace-nowrap"
-        >
-          CINEMAN
-        </Link>
-        
-        {/* Search Bar - Only show when authenticated */}
-        {isAuthenticated && (
-          <div className="flex-1 max-w-2xl">
+    <nav className="bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 px-4 md:px-8 py-4 md:py-5 shadow-2xl sticky top-0 z-50 backdrop-blur-sm">
+      <div className="max-w-7xl mx-auto">
+        {/* Desktop & Mobile Header */}
+        <div className="flex items-center justify-between gap-4">
+          {/* Logo */}
+          <Link 
+            to="/" 
+            className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-600 tracking-wider hover:scale-105 transition-transform duration-300 whitespace-nowrap"
+          >
+            CINEMAN
+          </Link>
+          
+          {/* Desktop Search Bar */}
+          {isAuthenticated && (
+            <div className="hidden lg:flex flex-1 max-w-2xl">
+              <div className="relative w-full">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch(e)}
+                  placeholder="Search for movies..."
+                  className="w-full px-6 py-3 pr-32 rounded-full bg-zinc-800/70 text-white placeholder-gray-400 border-2 border-zinc-700 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition-all duration-300"
+                />
+                <button
+                  onClick={handleSearch}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-2 rounded-full font-semibold transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg"
+                >
+                  Search
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex gap-3 items-center">
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/"
+                  className={`relative px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 active:scale-95 whitespace-nowrap ${
+                    isActive("/")
+                      ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/40"
+                      : "bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white"
+                  }`}
+                >
+                  Home
+                </Link>
+                
+                <Link
+                  to="/favorites"
+                  className={`relative px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 active:scale-95 whitespace-nowrap ${
+                    isActive("/favorites")
+                      ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/40"
+                      : "bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white"
+                  }`}
+                >
+                  Favorites
+                </Link>
+
+                <Link
+                  to="/playlists"
+                  className={`relative px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 active:scale-95 whitespace-nowrap ${
+                    isActive("/playlists")
+                      ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/40"
+                      : "bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white"
+                  }`}
+                >
+                  Playlists
+                </Link>
+
+                {/* Desktop Profile Menu */}
+                <div className="relative profile-menu-container">
+                  <button
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 hover:text-white transition-all duration-300"
+                  >
+                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center text-white font-bold">
+                      {user?.profilePicture && user.profilePicture !== 'https://via.placeholder.com/150' ? (
+                        <img 
+                          src={user.profilePicture} 
+                          alt={user.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentElement.innerHTML = user?.name?.charAt(0).toUpperCase() || 'U';
+                          }}
+                        />
+                      ) : (
+                        user?.name?.charAt(0).toUpperCase() || 'U'
+                      )}
+                    </div>
+                    <span className="font-semibold text-sm whitespace-nowrap">{user?.name}</span>
+                  </button>
+
+                  {showProfileMenu && (
+                    <div className="absolute right-0 mt-2 w-48 bg-zinc-800 rounded-lg shadow-2xl border border-zinc-700 overflow-hidden">
+                      <Link
+                        to="/profile"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="block px-4 py-3 text-gray-300 hover:bg-zinc-700 hover:text-white transition-colors"
+                      >
+                        Profile Settings
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700 hover:text-red-300 transition-colors"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="relative px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 active:scale-95 whitespace-nowrap bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white"
+                >
+                  Login
+                </Link>
+                
+                <Link
+                  to="/signup"
+                  className="relative px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 active:scale-95 whitespace-nowrap bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/40"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Mobile Actions */}
+          {isAuthenticated && (
+            <div className="flex lg:hidden items-center gap-2">
+              {/* Mobile Search Button */}
+              <button
+                onClick={() => setShowMobileSearch(!showMobileSearch)}
+                className="p-2 rounded-full bg-zinc-800 text-gray-300 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="p-2 rounded-full bg-zinc-800 text-gray-300 hover:text-white transition-colors"
+              >
+                {showMobileMenu ? (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Mobile Auth Buttons */}
+          {!isAuthenticated && (
+            <div className="flex lg:hidden gap-2">
+              <Link
+                to="/login"
+                className="px-4 py-2 rounded-full font-semibold text-sm bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white transition-all"
+              >
+                Login
+              </Link>
+              <Link
+                to="/signup"
+                className="px-4 py-2 rounded-full font-semibold text-sm bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg"
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Search Bar */}
+        {isAuthenticated && showMobileSearch && (
+          <div className="lg:hidden mt-4 animate-fadeIn">
             <div className="relative">
               <input
                 type="text"
@@ -43,105 +238,127 @@ function NavBar({ onSearch }) {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch(e)}
                 placeholder="Search for movies..."
-                className="w-full px-6 py-3 pr-32 rounded-full bg-zinc-800/70 text-white placeholder-gray-400 border-2 border-zinc-700 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition-all duration-300"
+                className="w-full px-4 py-3 pr-24 rounded-full bg-zinc-800/70 text-white placeholder-gray-400 border-2 border-zinc-700 focus:border-red-500 focus:outline-none transition-all"
               />
               <button
                 onClick={handleSearch}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-2 rounded-full font-semibold transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-2 rounded-full font-semibold text-sm"
               >
                 Search
               </button>
             </div>
           </div>
         )}
-        
-        {/* Navigation Links */}
-        <div className="flex gap-3 items-center">
-          {isAuthenticated ? (
-            <>
+
+        {/* Mobile Menu */}
+        {isAuthenticated && showMobileMenu && (
+          <div className="lg:hidden mt-4 bg-zinc-800/95 rounded-2xl border border-zinc-700 overflow-hidden animate-fadeIn">
+            <div className="p-4 border-b border-zinc-700 flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center text-white font-bold">
+                {user?.profilePicture && user.profilePicture !== 'https://via.placeholder.com/150' ? (
+                  <img 
+                    src={user.profilePicture} 
+                    alt={user.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  user?.name?.charAt(0).toUpperCase() || 'U'
+                )}
+              </div>
+              <div>
+                <p className="text-white font-semibold">{user?.name}</p>
+                <p className="text-gray-400 text-sm">{user?.email}</p>
+              </div>
+            </div>
+
+            <div className="py-2">
               <Link
                 to="/"
-                className={`relative px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 active:scale-95 whitespace-nowrap ${
-                  isActive("/")
-                    ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/40"
-                    : "bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white"
+                className={`block px-4 py-3 text-gray-300 hover:bg-zinc-700 hover:text-white transition-colors ${
+                  isActive("/") ? "bg-zinc-700 text-white" : ""
                 }`}
               >
-                Home
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                  Home
+                </div>
               </Link>
-              
+
               <Link
                 to="/favorites"
-                className={`relative px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 active:scale-95 whitespace-nowrap ${
-                  isActive("/favorites")
-                    ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/40"
-                    : "bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white"
+                className={`block px-4 py-3 text-gray-300 hover:bg-zinc-700 hover:text-white transition-colors ${
+                  isActive("/favorites") ? "bg-zinc-700 text-white" : ""
                 }`}
               >
-                Favorites
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  Favorites
+                </div>
               </Link>
 
               <Link
                 to="/playlists"
-                className={`relative px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 active:scale-95 whitespace-nowrap ${
-                  isActive("/playlists")
-                    ? "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/40"
-                    : "bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white"
+                className={`block px-4 py-3 text-gray-300 hover:bg-zinc-700 hover:text-white transition-colors ${
+                  isActive("/playlists") ? "bg-zinc-700 text-white" : ""
                 }`}
               >
-                Playlists
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  Playlists
+                </div>
               </Link>
 
-              {/* Profile Menu */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 hover:text-white transition-all duration-300"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center text-white font-bold">
-                    {user?.name?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                  <span className="font-semibold text-sm whitespace-nowrap">{user?.name}</span>
-                </button>
+              <Link
+                to="/profile"
+                className={`block px-4 py-3 text-gray-300 hover:bg-zinc-700 hover:text-white transition-colors ${
+                  isActive("/profile") ? "bg-zinc-700 text-white" : ""
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Profile Settings
+                </div>
+              </Link>
 
-                {showProfileMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-zinc-800 rounded-lg shadow-2xl border border-zinc-700 overflow-hidden">
-                    <Link
-                      to="/profile"
-                      onClick={() => setShowProfileMenu(false)}
-                      className="block px-4 py-3 text-gray-300 hover:bg-zinc-700 hover:text-white transition-colors"
-                    >
-                      Profile Settings
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700 hover:text-red-300 transition-colors"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              <Link
-                to="/login"
-                className="relative px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 active:scale-95 whitespace-nowrap bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white"
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700 hover:text-red-300 transition-colors"
               >
-                Login
-              </Link>
-              
-              <Link
-                to="/signup"
-                className="relative px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 active:scale-95 whitespace-nowrap bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/40"
-              >
-                Sign Up
-              </Link>
-            </>
-          )}
-        </div>
+                <div className="flex items-center gap-3">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Logout
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+      `}</style>
     </nav>
   );
 }
