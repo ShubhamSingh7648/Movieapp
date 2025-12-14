@@ -1,10 +1,16 @@
 import "./css/App.css";
 import Favorites from "./pages/Favorites";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Profile from "./pages/Profile";
+import Playlists from "./pages/Playlists";
 import NavBar from "./components/NavBar";
+import ProtectedRoute from "./components/ProtectedRoute";
 import React, { useState } from "react";
 import { MovieProvider } from "./contexts/MovieContext";
+import { AuthProvider } from "./contexts/authContext";
 
 function App() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -14,17 +20,57 @@ function App() {
   };
 
   return (
-    <MovieProvider>
-      <div className="min-h-screen bg-zinc-900">
-        <NavBar onSearch={handleSearch} />
-        <main className="main-content bg-zinc-900 min-h-screen">
-          <Routes>
-            <Route path="/" element={<Home searchQuery={searchQuery} />} />
-            <Route path="/favorites" element={<Favorites />} />
-          </Routes>
-        </main>
-      </div>
-    </MovieProvider>
+    <AuthProvider>
+      <MovieProvider>
+        <div className="min-h-screen bg-zinc-900">
+          <NavBar onSearch={handleSearch} />
+          <main className="main-content bg-zinc-900 min-h-screen">
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              
+              {/* Protected Routes */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Home searchQuery={searchQuery} />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/favorites"
+                element={
+                  <ProtectedRoute>
+                    <Favorites />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/playlists"
+                element={
+                  <ProtectedRoute>
+                    <Playlists />
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+        </div>
+      </MovieProvider>
+    </AuthProvider>
   );
 }
 
