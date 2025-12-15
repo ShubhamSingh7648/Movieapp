@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
 import Playlists from "./pages/Playlists";
+import MovieDetails from "./pages/MovieDetails";
 import NavBar from "./components/NavBar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import React, { useState } from "react";
@@ -36,6 +37,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Home searchQuery={searchQuery} />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/movie/:imdbID"
+                element={
+                  <ProtectedRoute>
+                    <MovieDetails />
                   </ProtectedRoute>
                 }
               />

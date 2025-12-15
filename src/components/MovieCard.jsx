@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMovieContext } from "../contexts/MovieContext";
 import { getPlaylists, addMovieToPlaylist } from "../services/api";
 
 function MovieCard({ movie }) {
+  const navigate = useNavigate();
   const { isFavorite, addToFavorite, removeFromFavorite } = useMovieContext();
   const favorite = isFavorite(movie.imdbID);
   
@@ -60,6 +62,11 @@ function MovieCard({ movie }) {
     else addToFavorite(movie);
   }
 
+  // Navigate to movie details
+  const handleCardClick = () => {
+    navigate(`/movie/${movie.imdbID}`);
+  };
+
   // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -73,7 +80,10 @@ function MovieCard({ movie }) {
   }, [showPlaylistMenu]);
 
   return (
-    <div className="group relative bg-zinc-800/50 backdrop-blur-sm rounded-xl md:rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-red-600/20 transition-all duration-300 hover:-translate-y-2 border border-zinc-700/50 hover:border-red-600/50">
+    <div 
+      onClick={handleCardClick}
+      className="group relative bg-zinc-800/50 backdrop-blur-sm rounded-xl md:rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-red-600/20 transition-all duration-300 hover:-translate-y-2 border border-zinc-700/50 hover:border-red-600/50 cursor-pointer"
+    >
       {/* Movie Poster */}
       <div className="relative aspect-[2/3] overflow-hidden bg-zinc-900">
         <img 

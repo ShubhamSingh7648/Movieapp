@@ -71,6 +71,25 @@ export const searchMovie = async (query) => {
   }
 };
 
+// ================= NEW: GET MOVIE DETAILS =================
+export const getMovieDetails = async (imdbID) => {
+  try {
+    const res = await fetch(
+      `${OMDB_BASE_URL}?i=${imdbID}&plot=full&apikey=${OMDB_API_KEY}`
+    );
+    const data = await res.json();
+    
+    if (data.Response === "False") {
+      throw new Error(data.Error || "Movie not found");
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("OMDB API Error:", error);
+    throw error;
+  }
+};
+
 // ================= AUTH APIs =================
 export const register = async (name, email, password) => {
   return authFetch(`${API_BASE_URL}/api/auth/register`, {
