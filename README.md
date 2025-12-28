@@ -430,13 +430,9 @@ VITE_OMDB_API_KEY=<your_omdb_api_key>
 4. Push to the branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
 ## 👥 Authors
 
-- Your Name - [GitHub](https://github.com/shubham7648)
+- Shubham singh - [GitHub](https://github.com/shubham7648)
 
 ## 🙏 Acknowledgments
 
