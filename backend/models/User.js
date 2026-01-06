@@ -24,6 +24,45 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: 'https://via.placeholder.com/150'
   },
+  
+  // ========== NEW FIELDS - ADD THESE ==========
+  username: {
+    type: String,
+    unique: true,
+    sparse: true, // Allows null initially for existing users
+    trim: true,
+    lowercase: true,
+    minlength: 3,
+    maxlength: 30,
+    match: [/^[a-z0-9_]+$/, 'Username can only contain lowercase letters, numbers, and underscores']
+  },
+  bio: {
+    type: String,
+    maxlength: 200,
+    default: ''
+  },
+  isPrivate: {
+    type: Boolean,
+    default: false
+  },
+  followers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  following: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  followersCount: {
+    type: Number,
+    default: 0
+  },
+  followingCount: {
+    type: Number,
+    default: 0
+  },
+  // ========== END NEW FIELDS ==========
+  
   favorites: [
     {
       imdbID: String,
@@ -57,6 +96,21 @@ const userSchema = new mongoose.Schema({
           }
         }
       ],
+      // ========== NEW PLAYLIST FIELDS - ADD THESE ==========
+      isPublic: {
+        type: Boolean,
+        default: false
+      },
+      clonedFrom: {
+        playlistId: String, // Original playlist ID
+        username: String,   // Original creator username
+        userId: mongoose.Schema.Types.ObjectId
+      },
+      cloneCount: {
+        type: Number,
+        default: 0
+      },
+      // ========== END NEW PLAYLIST FIELDS ==========
       createdAt: {
         type: Date,
         default: Date.now

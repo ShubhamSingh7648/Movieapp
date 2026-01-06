@@ -3,7 +3,18 @@ import MovieCard from "../components/MovieCard";
 import React from "react";
 
 function Favorites() {
-  const { favorites } = useMovieContext();
+  const { favorites, loading } = useMovieContext();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 md:h-16 md:w-16 border-t-4 border-b-4 border-red-600 mb-4"></div>
+          <p className="text-gray-400 text-base md:text-lg">Loading favorites...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (favorites.length === 0) {
     return (
