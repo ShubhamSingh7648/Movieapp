@@ -12,7 +12,9 @@ const {
   createPlaylist,
   deletePlaylist,
   addMovieToPlaylist,
-  removeMovieFromPlaylist
+  removeMovieFromPlaylist,
+  togglePlaylistPrivacy,
+  importPlaylist
 } = require('../controllers/playlistController');
 
 const { protect } = require('../middleware/auth');
@@ -36,6 +38,12 @@ router.route('/playlists')
   .post(createPlaylist);
 
 router.delete('/playlists/:playlistId', deletePlaylist);
+
+// Playlist privacy toggle
+router.put('/playlists/:playlistId/privacy', togglePlaylistPrivacy);
+
+// Playlist import
+router.post('/playlists/import/:playlistId', importPlaylist);
 
 // Playlist movies routes
 router.post('/playlists/:playlistId/movies', addMovieToPlaylist);

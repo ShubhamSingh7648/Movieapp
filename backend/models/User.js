@@ -7,6 +7,16 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide a name'],
     trim: true
   },
+  username: {
+    type: String,
+    required: [true, 'Please provide a username'],
+    unique: true,
+    lowercase: true,
+    trim: true,
+    minlength: [3, 'Username must be at least 3 characters'],
+    maxlength: [30, 'Username must be less than 30 characters'],
+    match: [/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers and underscores']
+  },
   email: {
     type: String,
     required: [true, 'Please provide an email'],
@@ -20,26 +30,14 @@ const userSchema = new mongoose.Schema({
     minlength: 6,
     select: false
   },
+  bio: {
+    type: String,
+    maxlength: [200, 'Bio must be less than 200 characters'],
+    default: ''
+  },
   profilePicture: {
     type: String,
     default: 'https://via.placeholder.com/150'
-  },
-  
-  // ========== NEW FIELDS - ADD THESE ==========
-  username: {
-    type: String,
-    unique: true,
-    sparse: true, // Allows null initially for existing users
-    trim: true,
-    lowercase: true,
-    minlength: 3,
-    maxlength: 30,
-    match: [/^[a-z0-9_]+$/, 'Username can only contain lowercase letters, numbers, and underscores']
-  },
-  bio: {
-    type: String,
-    maxlength: 200,
-    default: ''
   },
   isPrivate: {
     type: Boolean,
@@ -61,8 +59,6 @@ const userSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  // ========== END NEW FIELDS ==========
-  
   favorites: [
     {
       imdbID: String,
@@ -83,6 +79,23 @@ const userSchema = new mongoose.Schema({
         required: true,
         trim: true
       },
+      isPublic: {
+        type: Boolean,
+        default: false
+      },
+      clonedFrom: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+      },
+      clonedFromPlaylistId: {
+        type: String,
+        default: null
+      },
+      cloneCount: {
+        type: Number,
+        default: 0
+      },
       movies: [
         {
           imdbID: String,
@@ -96,21 +109,6 @@ const userSchema = new mongoose.Schema({
           }
         }
       ],
-      // ========== NEW PLAYLIST FIELDS - ADD THESE ==========
-      isPublic: {
-        type: Boolean,
-        default: false
-      },
-      clonedFrom: {
-        playlistId: String, // Original playlist ID
-        username: String,   // Original creator username
-        userId: mongoose.Schema.Types.ObjectId
-      },
-      cloneCount: {
-        type: Number,
-        default: 0
-      },
-      // ========== END NEW PLAYLIST FIELDS ==========
       createdAt: {
         type: Date,
         default: Date.now

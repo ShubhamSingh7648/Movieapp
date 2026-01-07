@@ -1,12 +1,12 @@
 const User = require('../models/User');
+const cloudinary = require('../config/cloudinary');
 
-// @desc    Get user favorites
-// @route   GET /api/users/favorites
-// @access  Private
+// @desc Get user favorites
+// @route GET /api/users/favorites
+// @access Private
 exports.getFavorites = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-
     res.status(200).json({
       success: true,
       favorites: user.favorites
@@ -19,13 +19,12 @@ exports.getFavorites = async (req, res) => {
   }
 };
 
-// @desc    Add movie to favorites
-// @route   POST /api/users/favorites
-// @access  Private
+// @desc Add movie to favorites
+// @route POST /api/users/favorites
+// @access Private
 exports.addFavorite = async (req, res) => {
   try {
     const { imdbID, Title, Year, Poster, Type } = req.body;
-
     const user = await User.findById(req.user.id);
 
     // Check if already favorited
@@ -62,9 +61,9 @@ exports.addFavorite = async (req, res) => {
   }
 };
 
-// @desc    Remove movie from favorites
-// @route   DELETE /api/users/favorites/:imdbID
-// @access  Private
+// @desc Remove movie from favorites
+// @route DELETE /api/users/favorites/:imdbID
+// @access Private
 exports.removeFavorite = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -87,16 +86,46 @@ exports.removeFavorite = async (req, res) => {
   }
 };
 
-// @desc    Update profile picture
-// @route   PUT /api/users/profile-picture
-// @access  Private
+// @desc Update profile picture - UPDATED WITH CLOUDINARY
+// @route PUT /api/users/profile-picture
+// @access Private
 exports.updateProfilePicture = async (req, res) => {
   try {
     const { profilePicture } = req.body;
 
+    if (!profilePicture) {
+      return res.status(400).json({
+        success: false,
+        message: 'No image provided'
+      });
+    }
+
+    // Get current user to delete old image if exists
+    const currentUser = await User.findById(req.user.id);
+    
+    // Delete old image from Cloudinary if it exists
+    if (currentUser.cloudinaryId) {
+      await cloudinary.uploader.destroy(currentUser.cloudinaryId);
+    }
+
+    // Upload new image to Cloudinary
+    const uploadResponse = await cloudinary.uploader.upload(profilePicture, {
+      folder: 'cineman/profile-pictures',
+      width: 500,
+      height: 500,
+      crop: 'fill',
+      gravity: 'face',
+      quality: 'auto',
+      fetch_format: 'auto'
+    });
+
+    // Update user with new image URL and Cloudinary ID
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { profilePicture },
+      { 
+        profilePicture: uploadResponse.secure_url,
+        cloudinaryId: uploadResponse.public_id
+      },
       { new: true }
     );
 
@@ -110,9 +139,10 @@ exports.updateProfilePicture = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Cloudinary upload error:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message || 'Failed to upload image'
     });
   }
 };

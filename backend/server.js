@@ -11,7 +11,7 @@ connectDB();
 
 const app = express();
 
-// CORS Configuration - FIXED
+// CORS Configuration
 app.use(cors({
   origin: [
     'http://localhost:5173',
@@ -23,7 +23,6 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
 
 // Body Parser Middleware
 app.use(express.json({ limit: '10mb' }));
@@ -38,6 +37,8 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/follow', require('./routes/followRoutes'));
+app.use('/api/search', require('./routes/searchRoutes'));
 
 // Health check route
 app.get('/api/health', (req, res) => {

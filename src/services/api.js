@@ -3,9 +3,9 @@ const OMDB_API_KEY = "7140804c";
 const OMDB_BASE_URL = "https://www.omdbapi.com/";
 
 // ================= BACKEND API =================
-// Use Vercel env variable, fallback to Render URL
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "https://movieapp-1-2flz.onrender.com";
+  // import.meta.env.VITE_API_URL || "https://movieapp-1-2flz.onrender.com";
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 // ================= AUTH TOKEN =================
 const getAuthToken = () => {
@@ -71,7 +71,6 @@ export const searchMovie = async (query) => {
   }
 };
 
-// ================= NEW: GET MOVIE DETAILS =================
 export const getMovieDetails = async (imdbID) => {
   try {
     const res = await fetch(
@@ -91,10 +90,10 @@ export const getMovieDetails = async (imdbID) => {
 };
 
 // ================= AUTH APIs =================
-export const register = async (name, email, password) => {
+export const register = async (name, email, password, username) => {
   return authFetch(`${API_BASE_URL}/api/auth/register`, {
     method: "POST",
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ name, email, password, username }),
   });
 };
 
@@ -183,4 +182,61 @@ export const removeMovieFromPlaylist = async (playlistId, imdbID) => {
       method: "DELETE",
     }
   );
+};
+
+export const togglePlaylistPrivacy = async (playlistId) => {
+  return authFetch(
+    `${API_BASE_URL}/api/users/playlists/${playlistId}/privacy`,
+    {
+      method: "PUT",
+    }
+  );
+};
+
+export const importPlaylist = async (playlistId, ownerId) => {
+  return authFetch(
+    `${API_BASE_URL}/api/users/playlists/import/${playlistId}`,
+    {
+      method: "POST",
+      body: JSON.stringify({ ownerId }),
+    }
+  );
+};
+
+// ================= FOLLOW APIs =================
+export const followUser = async (userId) => {
+  return authFetch(
+    `${API_BASE_URL}/api/follow/${userId}`,
+    {
+      method: "POST",
+    }
+  );
+};
+
+export const unfollowUser = async (userId) => {
+  return authFetch(
+    `${API_BASE_URL}/api/follow/${userId}`,
+    {
+      method: "DELETE",
+    }
+  );
+};
+
+export const getFollowers = async (userId) => {
+  return authFetch(`${API_BASE_URL}/api/follow/${userId}/followers`);
+};
+
+export const getFollowing = async (userId) => {
+  return authFetch(`${API_BASE_URL}/api/follow/${userId}/following`);
+};
+
+// ================= SEARCH APIs =================
+export const searchUsers = async (query) => {
+  return authFetch(
+    `${API_BASE_URL}/api/search/users?query=${encodeURIComponent(query)}`
+  );
+};
+
+export const getUserProfile = async (username) => {
+  return authFetch(`${API_BASE_URL}/api/search/profile/${username}`);
 };

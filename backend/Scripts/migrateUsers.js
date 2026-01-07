@@ -1,14 +1,22 @@
+// backend/scripts/addUsernames.js
+// Run this ONCE to add usernames to existing users
+// Usage: node scripts/addUsernames.js
+
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+
+dotenv.config();
+
 const User = require('../models/User');
-require('dotenv').config();
 
-const migrateUsers = async () => {
+const addUsernamesToExistingUsers = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('✅ Connected to MongoDB\n');
+    // Connect to database
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log('✅ Connected to MongoDB');
 
-    // Find all users without username field
-    const users = await User.find({ 
+    // Find all users without username
+    const usersWithoutUsername = await User.find({ 
       $or: [
         { username: { $exists: false } },
         { username: null },
@@ -16,64 +24,34 @@ const migrateUsers = async () => {
       ]
     });
 
-    console.log(`📊 Found ${users.length} users to migrate\n`);
+    console.log(`Found ${usersWithoutUsername.length} users without username`);
 
-    let migratedCount = 0;
-
-    for (const user of users) {
-      try {
-        // Generate username from email (part before @)
-        const emailPrefix = user.email.split('@')[0];
-        let baseUsername = emailPrefix
-          .toLowerCase()
-          .replace(/[^a-z0-9]/g, '') // Remove special chars
-          .substring(0, 20); // Limit length
-
-        // Ensure username is at least 3 chars
-        if (baseUsername.length < 3) {
-          baseUsername = `user${baseUsername}`;
-        }
-
-        // Check for duplicates and add number if needed
-        let finalUsername = baseUsername;
-        let counter = 1;
-        
-        while (await User.findOne({ username: finalUsername })) {
-          finalUsername = `${baseUsername}${counter}`;
-          counter++;
-        }
-
-        // Update user with new fields
-        user.username = finalUsername;
-        user.bio = user.bio || '';
-        user.isPrivate = user.isPrivate || false;
-        user.followers = user.followers || [];
-        user.following = user.following || [];
-        user.followersCount = user.followersCount || 0;
-        user.followingCount = user.followingCount || 0;
-
-        // Update all playlists with new fields
-        if (user.playlists && user.playlists.length > 0) {
-          user.playlists = user.playlists.map(playlist => ({
-            ...playlist.toObject(),
-            isPublic: playlist.isPublic || false,
-            cloneCount: playlist.cloneCount || 0,
-            clonedFrom: playlist.clonedFrom || null
-          }));
-        }
-
-        await user.save();
-        migratedCount++;
-        console.log(`✅ Migrated: ${user.email} → @${finalUsername}`);
-        
-      } catch (error) {
-        console.error(`❌ Failed to migrate ${user.email}:`, error.message);
-      }
+    if (usersWithoutUsername.length === 0) {
+      console.log('✅ All users already have usernames');
+      process.exit(0);
     }
 
-    console.log(`\n🎉 Migration Complete!`);
-    console.log(`   Migrated: ${migratedCount}/${users.length} users`);
-    
+    // Update each user
+    for (const user of usersWithoutUsername) {
+      // Generate username from email
+      let baseUsername = user.email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
+      let username = baseUsername;
+      let counter = 1;
+
+      // Check if username exists and add numbers if needed
+      while (await User.findOne({ username, _id: { $ne: user._id } })) {
+        username = `${baseUsername}${counter}`;
+        counter++;
+      }
+
+      // Update user
+      user.username = username;
+      await user.save();
+
+      console.log(`✅ Updated user ${user.email} with username: ${username}`);
+    }
+
+    console.log('✅ All users updated successfully!');
     process.exit(0);
   } catch (error) {
     console.error('❌ Migration error:', error);
@@ -81,4 +59,4 @@ const migrateUsers = async () => {
   }
 };
 
-migrateUsers();
+addUsernamesToExistingUsers();

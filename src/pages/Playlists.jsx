@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getPlaylists, createPlaylist, deletePlaylist, removeMovieFromPlaylist } from '../services/api';
+import { getPlaylists, createPlaylist, deletePlaylist, removeMovieFromPlaylist, togglePlaylistPrivacy } from '../services/api';
 
 function Playlists() {
   const [playlists, setPlaylists] = useState([]);
@@ -76,6 +76,17 @@ function Playlists() {
       }
     } catch (err) {
       setError(err.message || 'Failed to remove movie');
+    }
+  };
+
+  const handleTogglePrivacy = async (playlistId) => {
+    try {
+      await togglePlaylistPrivacy(playlistId);
+      setSuccessMessage('Privacy updated!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+      await loadPlaylists();
+    } catch (err) {
+      setError(err.message || 'Failed to update privacy');
     }
   };
 
@@ -158,11 +169,10 @@ function Playlists() {
           {playlists.map((playlist) => (
             <div
               key={playlist._id}
-              className="bg-zinc-800/50 backdrop-blur-sm rounded-xl md:rounded-2xl overflow-hidden border border-zinc-700/50 hover:border-red-600/50 transition-all duration-300 hover:-translate-y-1 shadow-xl cursor-pointer group"
-              onClick={() => setSelectedPlaylist(playlist)}
+              className="bg-zinc-800/50 backdrop-blur-sm rounded-xl md:rounded-2xl overflow-hidden border border-zinc-700/50 hover:border-red-600/50 transition-all duration-300 hover:-translate-y-1 shadow-xl group"
             >
               {/* Playlist Thumbnail */}
-              <div className="aspect-video bg-zinc-900 relative overflow-hidden">
+              <div className="aspect-video bg-zinc-900 relative overflow-hidden cursor-pointer" onClick={() => setSelectedPlaylist(playlist)}>
                 {playlist.movies && playlist.movies.length > 0 ? (
                   <div className="grid grid-cols-2 gap-1 h-full p-1">
                     {playlist.movies.slice(0, 4).map((movie, idx) => (
@@ -186,14 +196,44 @@ function Playlists() {
                   </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent opacity-60"></div>
+                
+                {/* Privacy Badge */}
+                <div className="absolute top-2 left-2">
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${
+                    playlist.isPublic 
+                      ? 'bg-green-500/20 text-green-400 border border-green-500/50' 
+                      : 'bg-gray-500/20 text-gray-400 border border-gray-500/50'
+                  }`}>
+                    {playlist.isPublic ? (
+                      <>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Public
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        Private
+                      </>
+                    )}
+                  </span>
+                </div>
               </div>
 
               {/* Playlist Info */}
               <div className="p-3 md:p-4">
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-base md:text-lg font-bold text-white group-hover:text-red-500 transition-colors line-clamp-1 flex-1">
-                    {playlist.name}
-                  </h3>
+                  <div className="flex-1 min-w-0" onClick={() => setSelectedPlaylist(playlist)} >
+                    <h3 className="text-base md:text-lg font-bold text-white group-hover:text-red-500 transition-colors line-clamp-1 cursor-pointer">
+                      {playlist.name}
+                    </h3>
+                    {playlist.clonedFrom && (
+                      <p className="text-xs text-blue-400 mt-1">Imported from user</p>
+                    )}
+                  </div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -206,9 +246,34 @@ function Playlists() {
                     </svg>
                   </button>
                 </div>
-                <p className="text-gray-400 text-xs md:text-sm">
-                  {playlist.movies?.length || 0} {playlist.movies?.length === 1 ? 'movie' : 'movies'}
-                </p>
+                
+                <div className="flex items-center justify-between">
+                  <p className="text-gray-400 text-xs md:text-sm">
+                    {playlist.movies?.length || 0} {playlist.movies?.length === 1 ? 'movie' : 'movies'}
+                    {playlist.cloneCount > 0 && ` • ${playlist.cloneCount} imports`}
+                  </p>
+                  
+                  {/* Privacy Toggle */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleTogglePrivacy(playlist._id);
+                    }}
+                    className="text-gray-400 hover:text-white transition-colors"
+                    title={playlist.isPublic ? 'Make Private' : 'Make Public'}
+                  >
+                    {playlist.isPublic ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           ))}

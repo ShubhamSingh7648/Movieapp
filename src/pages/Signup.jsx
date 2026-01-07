@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/authContext';
 
 function Signup() {
   const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -27,9 +28,19 @@ function Signup() {
       return;
     }
 
+    if (username && username.length < 3) {
+      setError('Username must be at least 3 characters');
+      return;
+    }
+
+    if (username && !/^[a-zA-Z0-9_]+$/.test(username)) {
+      setError('Username can only contain letters, numbers and underscores');
+      return;
+    }
+
     setLoading(true);
 
-    const result = await register(name, email, password);
+    const result = await register(name, email, password, username);
     
     if (result.success) {
       navigate('/');
@@ -73,6 +84,23 @@ function Signup() {
                 className="w-full px-4 py-3 rounded-lg bg-zinc-900/70 border border-zinc-700 text-white placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/30 transition-all outline-none"
                 placeholder="John Doe"
               />
+            </div>
+
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
+                Username <span className="text-gray-500 text-xs">(optional)</span>
+              </label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                className="w-full px-4 py-3 rounded-lg bg-zinc-900/70 border border-zinc-700 text-white placeholder-gray-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/30 transition-all outline-none"
+                placeholder="johndoe"
+              />
+              <p className="text-gray-500 text-xs mt-1">
+                If not provided, we'll generate one from your email
+              </p>
             </div>
 
             <div>

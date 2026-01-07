@@ -8,12 +8,18 @@ const generateToken = (id) => {
   });
 };
 
+// Generate username from email (helper function)
+const generateUsernameFromEmail = (email) => {
+  const baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
+  return baseUsername;
+};
+
 // @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
 exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, username } = req.body;
 
     // Validate input
     if (!name || !email || !password) {
@@ -32,11 +38,36 @@ exports.register = async (req, res) => {
       });
     }
 
+    // Generate or validate username
+    let finalUsername = username;
+    if (!finalUsername) {
+      // Auto-generate from email
+      const baseUsername = generateUsernameFromEmail(email);
+      finalUsername = baseUsername;
+      
+      // Check if username exists and add numbers if needed
+      let counter = 1;
+      while (await User.findOne({ username: finalUsername })) {
+        finalUsername = `${baseUsername}${counter}`;
+        counter++;
+      }
+    } else {
+      // Check if provided username exists
+      const usernameExists = await User.findOne({ username: finalUsername });
+      if (usernameExists) {
+        return res.status(400).json({
+          success: false,
+          message: 'Username already taken'
+        });
+      }
+    }
+
     // Create user
     const user = await User.create({
       name,
       email,
-      password
+      password,
+      username: finalUsername
     });
 
     // Generate token
@@ -49,6 +80,7 @@ exports.register = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        username: user.username,
         profilePicture: user.profilePicture
       }
     });
@@ -104,6 +136,7 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        username: user.username,
         profilePicture: user.profilePicture
       }
     });
@@ -136,8 +169,12 @@ exports.getMe = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        username: user.username,
         profilePicture: user.profilePicture,
-        favorites: user.favorites
+        favorites: user.favorites,
+        bio: user.bio,
+        followersCount: user.followersCount,
+        followingCount: user.followingCount
       }
     });
   } catch (error) {

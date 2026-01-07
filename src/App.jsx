@@ -1,17 +1,18 @@
 import "./css/App.css";
 import Favorites from "./pages/Favorites";
 import { Routes, Route, Navigate } from "react-router-dom";
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Profile from "./pages/Profile";
-import Playlists from "./pages/Playlists";
-import MovieDetails from "./pages/MovieDetails";
-import NavBar from "./components/NavBar";
-import ProtectedRoute from "./components/ProtectedRoute";
+import Home from "./pages/Home.jsx";
+import Login from "./pages/Login.jsx";
+import Signup from "./pages/Signup.jsx";
+import Profile from "./pages/Profile.jsx";
+import Playlists from "./pages/Playlists.jsx";
+import MovieDetails from "./pages/MovieDetails.jsx";
+import UserProfile from "./pages/UserProfile.jsx";
+import NavBar from "./components/NavBar.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import React, { useState } from "react";
-import { MovieProvider } from "./contexts/MovieContext";
-import { AuthProvider } from "./contexts/authContext";
+import { MovieProvider } from "./contexts/MovieContext.jsx";
+import { AuthProvider } from "./contexts/authContext.jsx";
 
 function App() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -69,6 +70,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Playlists />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user/:username"
+                element={
+                  <ProtectedRoute>
+                    <UserProfile />
                   </ProtectedRoute>
                 }
               />

@@ -14,7 +14,7 @@ const followSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['pending', 'accepted'],
-    default: 'accepted' // For now, auto-accept. Can add privacy later
+    default: 'accepted'
   },
   createdAt: {
     type: Date,
@@ -22,7 +22,7 @@ const followSchema = new mongoose.Schema({
   }
 });
 
-// Compound index to prevent duplicate follows
+// Create compound index to prevent duplicate follows
 followSchema.index({ followerId: 1, followingId: 1 }, { unique: true });
 
 module.exports = mongoose.model('Follow', followSchema);
