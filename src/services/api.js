@@ -261,3 +261,22 @@ export const getUserInteractions = async (type = null) => {
   const query = type ? `?type=${type}` : '';
   return authFetch(`${API_BASE_URL}/api/interactions${query}`);
 };
+
+
+// ================= MOVIE APIs =================
+export const getMovieTrailer = async (imdbID) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/movies/${imdbID}/trailer`);
+    const data = await res.json();
+    
+    if (!res.ok || !data.success) {
+      console.log('No trailer found for:', imdbID);
+      return null;
+    }
+    
+    return data.data; // { videoId: "abc123", title: "Official Trailer" }
+  } catch (error) {
+    console.error('Trailer fetch error:', error);
+    return null;
+  }
+};

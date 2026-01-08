@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getMovieDetails, getPlaylists, addMovieToPlaylist, trackInteraction } from '../services/api';
+import { getMovieDetails, getPlaylists, addMovieToPlaylist, trackInteraction, getMovieTrailer } from '../services/api';
 import { useMovieContext } from '../contexts/MovieContext';
-
 
 
 function MovieDetails() {
@@ -16,6 +15,10 @@ function MovieDetails() {
   const [showPlaylistMenu, setShowPlaylistMenu] = useState(false);
   const [playlists, setPlaylists] = useState([]);
   const [message, setMessage] = useState({ show: false, text: '', type: '' });
+  
+  // ✨ Trailer state
+  const [trailer, setTrailer] = useState(null);
+  const [trailerLoading, setTrailerLoading] = useState(false);
 
 
   // ✨ Load movie details
@@ -40,6 +43,33 @@ function MovieDetails() {
     // Only track after movie is loaded
     if (movie) {
       trackView();
+    }
+  }, [imdbID, movie]);
+
+  // ✨ Load trailer when movie is loaded
+  useEffect(() => {
+    const loadTrailer = async () => {
+      if (imdbID && movie) {
+        try {
+          setTrailerLoading(true);
+          console.log('🎬 Loading trailer for:', movie.Title);
+          const trailerData = await getMovieTrailer(imdbID);
+          setTrailer(trailerData);
+          if (trailerData) {
+            console.log('✅ Trailer loaded:', trailerData.title);
+          } else {
+            console.log('ℹ️ No trailer available for this movie');
+          }
+        } catch (err) {
+          console.error('❌ Failed to load trailer:', err);
+        } finally {
+          setTrailerLoading(false);
+        }
+      }
+    };
+    
+    if (movie) {
+      loadTrailer();
     }
   }, [imdbID, movie]);
 
@@ -108,7 +138,6 @@ function MovieDetails() {
       Type: movie.Type
     };
 
-
     if (isFavorite(movie.imdbID)) {
       removeFromFavorite(movie.imdbID);
       setMessage({ show: true, text: 'Removed from favorites', type: 'success' });
@@ -125,6 +154,34 @@ function MovieDetails() {
     if (!showPlaylistMenu) {
       loadPlaylists();
     }
+  };
+
+
+  // ✨ Trailer Component
+  const TrailerPlayer = ({ trailer }) => {
+    if (!trailer) return null;
+    
+    return (
+      <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-700/50">
+        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+          <span>🎬</span> {trailer.title || 'Official Trailer'}
+        </h3>
+        <div className="relative rounded-xl overflow-hidden shadow-2xl bg-black">
+          <div className="aspect-video">
+            <iframe
+              width="100%"
+              height="100%"
+              src={`https://www.youtube.com/embed/${trailer.videoId}?rel=0&modestbranding=1`}
+              title={trailer.title}
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              className="w-full h-full"
+            />
+          </div>
+        </div>
+      </div>
+    );
   };
 
 
@@ -356,6 +413,21 @@ function MovieDetails() {
             </div>
 
 
+            {/* ✨ TRAILER SECTION */}
+            {trailerLoading ? (
+              <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-700/50">
+                <div className="aspect-video flex items-center justify-center">
+                  <div className="text-gray-400 flex items-center gap-3">
+                    <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-red-600"></div>
+                    <span>Loading trailer...</span>
+                  </div>
+                </div>
+              </div>
+            ) : trailer ? (
+              <TrailerPlayer trailer={trailer} />
+            ) : null}
+
+
             {/* Plot */}
             {movie.Plot !== "N/A" && (
               <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-700/50">
@@ -460,7 +532,6 @@ function MovieDetails() {
                 )}
               </div>
             </div>
-
 
           </div>
         </div>

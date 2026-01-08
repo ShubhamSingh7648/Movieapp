@@ -41,6 +41,7 @@ app.use('/api/follow', require('./routes/followRoutes'));
 app.use('/api/search', require('./routes/searchRoutes'));
 app.use('/api/interactions', require('./routes/interactionRoutes'));
 app.use('/api/recommendations', require('./routes/recommendationRoutes'));
+app.use('/api/movies', require('./routes/movieRoutes'));
 
 
 // Health check route
