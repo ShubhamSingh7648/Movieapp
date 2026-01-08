@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../contexts/authContext";
 import { searchUsers, searchMovie, followUser, unfollowUser } from '../services/api';
 
@@ -7,13 +7,16 @@ function NavBar({ onSearch }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchType, setSearchType] = useState("movies"); // movies or users
+  const [searchType, setSearchType] = useState("movies");
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const { user, logout, isAuthenticated } = useAuth();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  
+  const profileMenuRef = useRef(null);
 
   const isActive = (path) => location.pathname === path;
 
@@ -37,14 +40,10 @@ function NavBar({ onSearch }) {
     setShowResults(true);
     try {
       if (searchType === 'users') {
-        console.log('Searching users for:', searchQuery);
         const data = await searchUsers(searchQuery);
-        console.log('User search results:', data);
         setSearchResults(data.users || []);
       } else {
-        console.log('Searching movies for:', searchQuery);
         const results = await searchMovie(searchQuery);
-        console.log('Movie search results:', results);
         setSearchResults(results || []);
       }
     } catch (err) {
@@ -71,7 +70,6 @@ function NavBar({ onSearch }) {
       } else {
         await followUser(userId);
       }
-
       setSearchResults(searchResults.map(u =>
         u._id === userId ? { ...u, isFollowing: !isFollowing } : u
       ));
@@ -95,6 +93,7 @@ function NavBar({ onSearch }) {
   const handleLogout = () => {
     logout();
     setShowMobileMenu(false);
+    setShowProfileMenu(false);
   };
 
   // Close menus when clicking outside
@@ -106,22 +105,25 @@ function NavBar({ onSearch }) {
       if (showResults && !event.target.closest('.search-container')) {
         setShowResults(false);
       }
+      if (showProfileMenu && profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showTypeDropdown, showResults]);
+  }, [showTypeDropdown, showResults, showProfileMenu]);
 
   // Close mobile menu on route change
   useEffect(() => {
     setShowMobileMenu(false);
     setShowResults(false);
+    setShowProfileMenu(false);
   }, [location.pathname]);
 
   return (
     <nav className="bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 px-4 md:px-8 py-4 md:py-5 shadow-2xl sticky top-0 z-50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto">
-        {/* Desktop & Mobile Header */}
         <div className="flex items-center justify-between gap-4">
           {/* Logo */}
           <Link
@@ -293,34 +295,13 @@ function NavBar({ onSearch }) {
                   Home
                 </Link>
 
-                <Link
-                  to="/favorites"
-                  className={`relative px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 active:scale-95 whitespace-nowrap ${
-                    isActive('/favorites')
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/40'
-                      : 'bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white'
-                  }`}
-                >
-                  Favorites
-                </Link>
-
-                <Link
-                  to="/playlists"
-                  className={`relative px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105 active:scale-95 whitespace-nowrap ${
-                    isActive('/playlists')
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/40'
-                      : 'bg-zinc-800 text-gray-300 hover:bg-zinc-700 hover:text-white'
-                  }`}
-                >
-                  Playlists
-                </Link>
-
-                {/* Desktop Profile Button - UPDATED */}
-                <button
-                  onClick={() => navigate(`/user/${user?.username}`)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-zinc-800 hover:bg-zinc-700 text-gray-300 hover:text-white transition-all duration-300"
-                >
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center text-white font-bold">
+                {/* Desktop Profile Dropdown */}
+                <div className="relative" ref={profileMenuRef}>
+                  <button
+                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center text-white font-bold hover:ring-4 hover:ring-red-500/30 transition-all duration-300 transform hover:scale-110"
+                    title={user?.name}
+                  >
                     {user?.profilePicture && user.profilePicture !== 'https://via.placeholder.com/150' ? (
                       <img
                         src={user.profilePicture}
@@ -334,9 +315,64 @@ function NavBar({ onSearch }) {
                     ) : (
                       user?.name?.charAt(0).toUpperCase() || 'U'
                     )}
-                  </div>
-                  <span className="font-semibold text-sm whitespace-nowrap">{user?.name}</span>
-                </button>
+                  </button>
+
+                  {/* Profile Dropdown Menu */}
+                  {showProfileMenu && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-zinc-900 rounded-xl shadow-2xl border border-zinc-700 overflow-hidden z-50">
+                      <Link
+                        to={`/user/${user?.username}`}
+                        onClick={() => setShowProfileMenu(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-zinc-800 hover:text-white transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        View Profile
+                      </Link>
+                      <Link
+                        to="/favorites"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-zinc-800 hover:text-white transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        Favorites
+                      </Link>
+                      <Link
+                        to="/playlists"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-zinc-800 hover:text-white transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        Playlists
+                      </Link>
+                      <Link
+                        to="/profile"
+                        onClick={() => setShowProfileMenu(false)}
+                        className="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-zinc-800 hover:text-white transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Settings
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-zinc-800 hover:text-red-300 transition-colors border-t border-zinc-800"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -356,21 +392,17 @@ function NavBar({ onSearch }) {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Profile Button */}
           {isAuthenticated && (
             <div className="flex lg:hidden items-center gap-2">
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="p-2 rounded-full bg-zinc-800 text-gray-300 hover:text-white transition-colors"
+                className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center text-white font-bold hover:ring-4 hover:ring-red-500/30 transition-all"
               >
-                {showMobileMenu ? (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                {user?.profilePicture && user.profilePicture !== 'https://via.placeholder.com/150' ? (
+                  <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
                 ) : (
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
+                  user?.name?.charAt(0).toUpperCase() || 'U'
                 )}
               </button>
             </div>
@@ -457,7 +489,6 @@ function NavBar({ onSearch }) {
                 </div>
               </Link>
 
-              {/* Mobile My Profile Link - UPDATED */}
               <Link
                 to={`/user/${user?.username}`}
                 className="block px-4 py-3 text-gray-300 hover:bg-zinc-700 hover:text-white transition-colors"
@@ -470,7 +501,6 @@ function NavBar({ onSearch }) {
                 </div>
               </Link>
 
-              {/* Mobile Settings Link */}
               <Link
                 to="/profile"
                 className={`block px-4 py-3 text-gray-300 hover:bg-zinc-700 hover:text-white transition-colors ${

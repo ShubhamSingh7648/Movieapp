@@ -24,69 +24,71 @@ function App() {
   return (
     <AuthProvider>
       <MovieProvider>
-        <div className="min-h-screen bg-zinc-900">
-          <NavBar onSearch={handleSearch} />
-          <main className="main-content bg-zinc-900 min-h-screen">
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              
-              {/* Protected Routes */}
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Home searchQuery={searchQuery} />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/movie/:imdbID"
-                element={
-                  <ProtectedRoute>
-                    <MovieDetails />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/favorites"
-                element={
-                  <ProtectedRoute>
-                    <Favorites />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/playlists"
-                element={
-                  <ProtectedRoute>
-                    <Playlists />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/user/:username"
-                element={
-                  <ProtectedRoute>
-                    <UserProfile />
-                  </ProtectedRoute>
-                }
-              />
-              
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-        </div>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          {/* Protected Routes */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <NavBar onSearch={handleSearch} />
+                <Home searchQuery={searchQuery} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/favorites"
+            element={
+              <ProtectedRoute>
+                <NavBar onSearch={handleSearch} />
+                <Favorites />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <NavBar onSearch={handleSearch} />
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/playlists"
+            element={
+              <ProtectedRoute>
+                <NavBar onSearch={handleSearch} />
+                <Playlists />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/movie/:imdbID"
+            element={
+              <ProtectedRoute>
+                <NavBar onSearch={handleSearch} />
+                <MovieDetails />
+              </ProtectedRoute>
+            }
+          />
+          {/* ADDED: Route for other user profiles */}
+          <Route
+            path="/user/:username"
+            element={
+              <ProtectedRoute>
+                <NavBar onSearch={handleSearch} />
+                <UserProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
       </MovieProvider>
     </AuthProvider>
   );

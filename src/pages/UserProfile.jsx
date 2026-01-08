@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../contexts/authContext'; // ADDED
 import { getUserProfile, followUser, unfollowUser, importPlaylist, getFollowers, getFollowing } from '../services/api';
 
 function UserProfile() {
   const { username } = useParams();
+  const { user } = useAuth(); // ADDED - get current logged-in user
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -14,14 +16,19 @@ function UserProfile() {
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
 
+  // CHANGED: Use current user's username if no param provided
+  const profileUsername = username || user?.username;
+
   useEffect(() => {
-    loadProfile();
-  }, [username]);
+    if (profileUsername) {
+      loadProfile();
+    }
+  }, [profileUsername]); // CHANGED from [username]
 
   const loadProfile = async () => {
     try {
       setLoading(true);
-      const data = await getUserProfile(username);
+      const data = await getUserProfile(profileUsername); // CHANGED from username
       setProfile(data.user);
       setError('');
     } catch (err) {
@@ -64,13 +71,10 @@ function UserProfile() {
     }
   };
 
-  // NEW FUNCTION - Handle playlist click
   const handlePlaylistClick = (playlist) => {
     if (profile.isOwnProfile) {
-      // If it's your own profile, go to playlists page
       navigate('/playlists');
     } else {
-      // If it's someone else's profile, show a message or do nothing
       showMessage('This is a public playlist from ' + profile.name, 'info');
     }
   };
@@ -103,317 +107,204 @@ function UserProfile() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-red-600 mb-4"></div>
-          <p className="text-gray-400 text-lg">Loading profile...</p>
-        </div>
+        <div className="text-white text-xl">Loading profile...</div>
       </div>
     );
   }
 
-  if (error || !profile) {
+  if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen px-4">
-        <div className="text-center bg-zinc-800/50 backdrop-blur-sm rounded-2xl p-8 max-w-md w-full">
-          <div className="text-red-500 text-5xl mb-4">⚠️</div>
-          <p className="text-gray-300 text-lg mb-6">{error || 'Profile not found'}</p>
-          <button
-            onClick={() => navigate(-1)}
-            className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-lg transition-all"
-          >
-            Go Back
-          </button>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <div className="text-red-500 text-xl mb-4">{error || 'Profile not found'}</div>
+        <button 
+          onClick={() => navigate(-1)}
+          className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
+        >
+          Go Back
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-6 py-8">
+    <div className="min-h-screen bg-black text-white p-6">
       {/* Message Toast */}
       {message.show && (
-        <div className="fixed top-24 right-4 z-50 animate-slideIn">
-          <div className={`px-6 py-3 rounded-lg shadow-2xl ${
-            message.type === 'success' ? 'bg-green-500/90 text-white' : 
-            message.type === 'info' ? 'bg-blue-500/90 text-white' :
-            'bg-red-500/90 text-white'
-          }`}>
-            {message.text}
-          </div>
+        <div className={`fixed top-4 right-4 px-6 py-3 rounded-lg z-50 ${
+          message.type === 'success' ? 'bg-green-600' : 
+          message.type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+        }`}>
+          {message.text}
         </div>
       )}
 
-      {/* Back Button */}
-      <button
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6"
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        <span className="font-medium">Back</span>
-      </button>
-
-      {/* Profile Header */}
-      <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-zinc-700/50 shadow-2xl mb-8">
-        <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-          {/* Profile Picture */}
-          <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border-4 border-zinc-700 flex-shrink-0">
-            {profile.profilePicture && profile.profilePicture !== 'https://via.placeholder.com/150' ? (
-              <img src={profile.profilePicture} alt={profile.name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center text-white text-4xl font-bold">
-                {profile.name.charAt(0).toUpperCase()}
+      <div className="max-w-4xl mx-auto">
+        {/* Profile Header */}
+        <div className="bg-gray-900 rounded-lg p-6 mb-6">
+          <div className="flex items-start gap-6">
+            <img
+              src={profile.profilePicture || '/default-avatar.png'}
+              alt={profile.name}
+              className="w-32 h-32 rounded-full object-cover"
+            />
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-2">
+                <h1 className="text-3xl font-bold">{profile.name}</h1>
+                {!profile.isOwnProfile && (
+                  <button
+                    onClick={handleFollowToggle}
+                    className={`px-6 py-2 rounded-lg font-semibold ${
+                      profile.isFollowing
+                        ? 'bg-gray-700 hover:bg-gray-600'
+                        : 'bg-red-600 hover:bg-red-700'
+                    }`}
+                  >
+                    {profile.isFollowing ? 'Following' : 'Follow'}
+                  </button>
+                )}
+                {profile.isOwnProfile && (
+                  <button
+                    onClick={() => navigate('/profile')}
+                    className="px-6 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold"
+                  >
+                    Edit Profile
+                  </button>
+                )}
               </div>
-            )}
-          </div>
-
-          {/* Profile Info */}
-          <div className="flex-1 text-center md:text-left">
-            <h1 className="text-3xl md:text-4xl font-black text-white mb-2">{profile.name}</h1>
-            <p className="text-gray-400 text-lg mb-3">@{profile.username}</p>
-            {profile.bio && (
-              <p className="text-gray-300 mb-4">{profile.bio}</p>
-            )}
-
-            {/* Stats */}
-            <div className="flex gap-6 justify-center md:justify-start mb-4">
-              <button
-                onClick={loadFollowers}
-                className="text-center hover:text-red-500 transition-colors"
-              >
-                <div className="text-2xl font-bold text-white">{profile.followersCount}</div>
-                <div className="text-gray-400 text-sm">Followers</div>
-              </button>
-              <button
-                onClick={loadFollowing}
-                className="text-center hover:text-red-500 transition-colors"
-              >
-                <div className="text-2xl font-bold text-white">{profile.followingCount}</div>
-                <div className="text-gray-400 text-sm">Following</div>
-              </button>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-white">{profile.playlists?.length || 0}</div>
-                <div className="text-gray-400 text-sm">Playlists</div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 justify-center md:justify-start">
-              {/* Follow/Unfollow Button */}
-              {!profile.isOwnProfile && (
-                <button
-                  onClick={handleFollowToggle}
-                  className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-                    profile.isFollowing
-                      ? 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
-                      : 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg'
-                  }`}
-                >
-                  {profile.isFollowing ? 'Unfollow' : 'Follow'}
-                </button>
+              <p className="text-gray-400 mb-4">@{profile.username}</p>
+              {profile.bio && (
+                <p className="text-gray-300 mb-4">{profile.bio}</p>
               )}
 
-              {/* Settings Button for Own Profile */}
-              {profile.isOwnProfile && (
-                <Link
-                  to="/profile"
-                  className="px-6 py-3 rounded-lg font-semibold transition-all bg-zinc-700 text-gray-300 hover:bg-zinc-600 flex items-center gap-2"
+              {/* Stats */}
+              <div className="flex gap-6 text-sm">
+                <div 
+                  className="cursor-pointer hover:text-red-500"
+                  onClick={loadFollowers}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  Profile Settings
-                </Link>
-              )}
+                  <span className="font-bold">{profile.followersCount || 0}</span> Followers
+                </div>
+                <div 
+                  className="cursor-pointer hover:text-red-500"
+                  onClick={loadFollowing}
+                >
+                  <span className="font-bold">{profile.followingCount || 0}</span> Following
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Playlists Section */}
-      <div>
-        <h2 className="text-2xl font-bold text-white mb-6">
-          {profile.isOwnProfile ? 'Your' : `${profile.name}'s`} Public Playlists
-        </h2>
-
-        {profile.playlists.length === 0 ? (
-          <div className="text-center py-12 bg-zinc-800/50 backdrop-blur-sm rounded-2xl border border-zinc-700/50">
-            <div className="text-5xl mb-4">📁</div>
-            <p className="text-gray-400">No public playlists yet</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {profile.playlists.map((playlist) => (
-              <div
-                key={playlist._id}
-                onClick={() => handlePlaylistClick(playlist)}
-                className="bg-zinc-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-zinc-700/50 hover:border-red-600/50 transition-all duration-300 hover:-translate-y-1 shadow-xl cursor-pointer"
-              >
-                {/* Playlist Header */}
-                <div className="p-4 border-b border-zinc-700">
-                  <h3 className="text-lg font-bold text-white mb-1 line-clamp-1">
-                    {playlist.name}
-                  </h3>
-                  <div className="flex items-center justify-between text-sm">
-                    <p className="text-gray-400">{playlist.movieCount || playlist.movies?.length || 0} movies</p>
+        {/* Playlists Section */}
+        <div className="bg-gray-900 rounded-lg p-6">
+          <h2 className="text-2xl font-bold mb-4">Public Playlists</h2>
+          {!profile.playlists || profile.playlists.length === 0 ? (
+            <p className="text-gray-400 text-center py-8">No public playlists yet</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {profile.playlists.map((playlist) => (
+                <div
+                  key={playlist._id}
+                  className="bg-gray-800 rounded-lg p-4 hover:bg-gray-700 cursor-pointer transition"
+                  onClick={() => handlePlaylistClick(playlist)}
+                >
+                  <h3 className="text-xl font-semibold mb-2">{playlist.name}</h3>
+                  {playlist.description && (
+                    <p className="text-gray-400 text-sm mb-3">{playlist.description}</p>
+                  )}
+                  <div className="flex items-center justify-between text-sm text-gray-400">
+                    <span>{playlist.movieCount || playlist.movies?.length || 0} movies</span>
                     {playlist.cloneCount > 0 && (
-                      <p className="text-gray-500 flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        {playlist.cloneCount} imports
-                      </p>
+                      <span className="text-red-500">{playlist.cloneCount} imports</span>
                     )}
                   </div>
-                </div>
-
-                {/* Import Button - Only show for other users' playlists */}
-                {!profile.isOwnProfile && (
-                  <div className="p-4">
+                  {!profile.isOwnProfile && (
                     <button
                       onClick={(e) => {
-                        e.stopPropagation(); // Prevent playlist click when clicking import
+                        e.stopPropagation();
                         handleImportPlaylist(playlist._id);
                       }}
-                      className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+                      className="mt-3 w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-semibold"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
                       Import Playlist
                     </button>
-                  </div>
-                )}
-
-                {/* View Button - Only show for own playlists */}
-                {profile.isOwnProfile && (
-                  <div className="p-4">
-                    <div className="text-center text-gray-400 text-sm">
-                      Click to view in Playlists
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Followers Modal */}
       {showFollowersModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-zinc-900 rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col border border-zinc-700 shadow-2xl">
-            <div className="p-6 border-b border-zinc-700 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white">Followers</h2>
-              <button
-                onClick={() => setShowFollowersModal(false)}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full max-h-96 overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Followers</h2>
+              <button onClick={() => setShowFollowersModal(false)} className="text-gray-400 hover:text-white">
+                ✕
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-6">
-              {followers.length === 0 ? (
-                <p className="text-center text-gray-400">No followers yet</p>
-              ) : (
-                <div className="space-y-3">
-                  {followers.map((user) => (
-                    <div
-                      key={user._id}
-                      onClick={() => {
-                        setShowFollowersModal(false);
-                        navigate(`/user/${user.username}`);
-                      }}
-                      className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center text-white font-bold flex-shrink-0">
-                        {user.profilePicture && user.profilePicture !== 'https://via.placeholder.com/150' ? (
-                          <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
-                        ) : (
-                          user.name.charAt(0).toUpperCase()
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-white font-semibold truncate">{user.name}</h3>
-                        <p className="text-gray-400 text-sm">@{user.username}</p>
-                      </div>
+            {followers.length === 0 ? (
+              <p className="text-gray-400 text-center py-4">No followers yet</p>
+            ) : (
+              <div className="space-y-3">
+                {followers.map((user) => (
+                  <div key={user._id} className="flex items-center gap-3 p-2 hover:bg-gray-800 rounded-lg">
+                    <img
+                      src={user.profilePicture || '/default-avatar.png'}
+                      alt={user.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div className="flex-1">
+                      <Link to={`/user/${user.username}`} onClick={() => setShowFollowersModal(false)}>
+                        <p className="font-semibold hover:text-red-500">{user.name}</p>
+                        <p className="text-sm text-gray-400">@{user.username}</p>
+                      </Link>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {/* Following Modal */}
       {showFollowingModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-zinc-900 rounded-2xl w-full max-w-md max-h-[80vh] flex flex-col border border-zinc-700 shadow-2xl">
-            <div className="p-6 border-b border-zinc-700 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white">Following</h2>
-              <button
-                onClick={() => setShowFollowingModal(false)}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full max-h-96 overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Following</h2>
+              <button onClick={() => setShowFollowingModal(false)} className="text-gray-400 hover:text-white">
+                ✕
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-6">
-              {following.length === 0 ? (
-                <p className="text-center text-gray-400">Not following anyone yet</p>
-              ) : (
-                <div className="space-y-3">
-                  {following.map((user) => (
-                    <div
-                      key={user._id}
-                      onClick={() => {
-                        setShowFollowingModal(false);
-                        navigate(`/user/${user.username}`);
-                      }}
-                      className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
-                    >
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center text-white font-bold flex-shrink-0">
-                        {user.profilePicture && user.profilePicture !== 'https://via.placeholder.com/150' ? (
-                          <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
-                        ) : (
-                          user.name.charAt(0).toUpperCase()
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-white font-semibold truncate">{user.name}</h3>
-                        <p className="text-gray-400 text-sm">@{user.username}</p>
-                      </div>
+            {following.length === 0 ? (
+              <p className="text-gray-400 text-center py-4">Not following anyone yet</p>
+            ) : (
+              <div className="space-y-3">
+                {following.map((user) => (
+                  <div key={user._id} className="flex items-center gap-3 p-2 hover:bg-gray-800 rounded-lg">
+                    <img
+                      src={user.profilePicture || '/default-avatar.png'}
+                      alt={user.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div className="flex-1">
+                      <Link to={`/user/${user.username}`} onClick={() => setShowFollowingModal(false)}>
+                        <p className="font-semibold hover:text-red-500">{user.name}</p>
+                        <p className="text-sm text-gray-400">@{user.username}</p>
+                      </Link>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        @keyframes slideIn {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        .animate-slideIn {
-          animation: slideIn 0.3s ease-out;
-        }
-      `}</style>
     </div>
   );
 }
