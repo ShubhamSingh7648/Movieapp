@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../contexts/authContext";
 import { searchUsers, searchMovie, followUser, unfollowUser } from '../services/api';
 
+
 function NavBar({ onSearch }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -15,10 +16,13 @@ function NavBar({ onSearch }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const { user, logout, isAuthenticated } = useAuth();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false); // ✨ NEW STATE
   
   const profileMenuRef = useRef(null);
 
+
   const isActive = (path) => location.pathname === path;
+
 
   // Debounced search
   useEffect(() => {
@@ -28,12 +32,15 @@ function NavBar({ onSearch }) {
       return;
     }
 
+
     const timer = setTimeout(() => {
       performSearch();
     }, 500);
 
+
     return () => clearTimeout(timer);
   }, [searchQuery, searchType]);
+
 
   const performSearch = async () => {
     setLoading(true);
@@ -54,14 +61,17 @@ function NavBar({ onSearch }) {
     }
   };
 
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchType === 'movies' && onSearch && searchQuery.trim()) {
       onSearch(searchQuery);
       setShowResults(false);
       setSearchQuery("");
+      setShowMobileSearch(false); // ✨ CLOSE MOBILE SEARCH
     }
   };
+
 
   const handleFollowToggle = async (userId, isFollowing) => {
     try {
@@ -78,23 +88,29 @@ function NavBar({ onSearch }) {
     }
   };
 
+
   const handleUserClick = (username) => {
     navigate(`/user/${username}`);
     setShowResults(false);
     setSearchQuery("");
+    setShowMobileSearch(false); // ✨ CLOSE MOBILE SEARCH
   };
+
 
   const handleMovieClick = (imdbID) => {
     navigate(`/movie/${imdbID}`);
     setShowResults(false);
     setSearchQuery("");
+    setShowMobileSearch(false); // ✨ CLOSE MOBILE SEARCH
   };
+
 
   const handleLogout = () => {
     logout();
     setShowMobileMenu(false);
     setShowProfileMenu(false);
   };
+
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -110,16 +126,20 @@ function NavBar({ onSearch }) {
       }
     };
 
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showTypeDropdown, showResults, showProfileMenu]);
+
 
   // Close mobile menu on route change
   useEffect(() => {
     setShowMobileMenu(false);
     setShowResults(false);
     setShowProfileMenu(false);
+    setShowMobileSearch(false); // ✨ CLOSE MOBILE SEARCH ON ROUTE CHANGE
   }, [location.pathname]);
+
 
   return (
     <nav className="bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 px-4 md:px-8 py-4 md:py-5 shadow-2xl sticky top-0 z-50 backdrop-blur-sm">
@@ -132,6 +152,7 @@ function NavBar({ onSearch }) {
           >
             CINEMAN
           </Link>
+
 
           {/* Desktop Integrated Search Bar */}
           {isAuthenticated && (
@@ -148,6 +169,7 @@ function NavBar({ onSearch }) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
+
 
                   {showTypeDropdown && (
                     <div className="absolute top-full mt-1 bg-zinc-800 rounded-lg shadow-2xl border border-zinc-700 overflow-hidden min-w-[120px]">
@@ -183,6 +205,7 @@ function NavBar({ onSearch }) {
                   )}
                 </div>
 
+
                 <input
                   type="text"
                   value={searchQuery}
@@ -192,12 +215,14 @@ function NavBar({ onSearch }) {
                   className="w-full pl-32 pr-32 py-3 rounded-full bg-zinc-800/70 text-white placeholder-gray-400 border-2 border-zinc-700 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/30 transition-all duration-300"
                 />
 
+
                 <button
                   onClick={handleSearch}
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 py-2 rounded-full font-semibold transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg"
                 >
                   Search
                 </button>
+
 
                 {/* Search Results Dropdown */}
                 {showResults && (
@@ -280,6 +305,7 @@ function NavBar({ onSearch }) {
             </div>
           )}
 
+
           {/* Desktop Navigation */}
           <div className="hidden lg:flex gap-3 items-center">
             {isAuthenticated ? (
@@ -294,6 +320,7 @@ function NavBar({ onSearch }) {
                 >
                   Home
                 </Link>
+
 
                 {/* Desktop Profile Dropdown */}
                 <div className="relative" ref={profileMenuRef}>
@@ -316,6 +343,7 @@ function NavBar({ onSearch }) {
                       user?.name?.charAt(0).toUpperCase() || 'U'
                     )}
                   </button>
+
 
                   {/* Profile Dropdown Menu */}
                   {showProfileMenu && (
@@ -392,9 +420,21 @@ function NavBar({ onSearch }) {
             )}
           </div>
 
-          {/* Mobile Profile Button */}
+
+          {/* ✨ MOBILE ACTIONS - ADDED SEARCH ICON */}
           {isAuthenticated && (
             <div className="flex lg:hidden items-center gap-2">
+              {/* Mobile Search Icon Button */}
+              <button
+                onClick={() => setShowMobileSearch(!showMobileSearch)}
+                className="w-10 h-10 flex items-center justify-center text-gray-300 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+              
+              {/* Mobile Profile Button */}
               <button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
                 className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center text-white font-bold hover:ring-4 hover:ring-red-500/30 transition-all"
@@ -407,6 +447,7 @@ function NavBar({ onSearch }) {
               </button>
             </div>
           )}
+
 
           {/* Mobile Auth Buttons */}
           {!isAuthenticated && (
@@ -427,6 +468,135 @@ function NavBar({ onSearch }) {
           )}
         </div>
 
+
+        {/* ✨ MOBILE SEARCH BAR - NEW SECTION */}
+        {showMobileSearch && isAuthenticated && (
+          <div className="lg:hidden mt-4 bg-zinc-800/95 rounded-2xl border border-zinc-700 p-4 animate-fadeIn search-container">
+            {/* Search Type Toggle */}
+            <div className="flex gap-2 mb-3">
+              <button
+                onClick={() => {
+                  setSearchType('movies');
+                  setSearchQuery("");
+                }}
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  searchType === 'movies'
+                    ? 'bg-gradient-to-r from-red-600 to-red-700 text-white'
+                    : 'bg-zinc-700 text-gray-300'
+                }`}
+              >
+                🎬 Movies
+              </button>
+              <button
+                onClick={() => {
+                  setSearchType('users');
+                  setSearchQuery("");
+                }}
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                  searchType === 'users'
+                    ? 'bg-gradient-to-r from-red-600 to-red-700 text-white'
+                    : 'bg-zinc-700 text-gray-300'
+                }`}
+              >
+                👤 Users
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <form onSubmit={handleSearch} className="relative mb-3">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={`Search for ${searchType}...`}
+                className="w-full pl-4 pr-16 py-3 rounded-full bg-zinc-700 text-white placeholder-gray-400 border-2 border-zinc-600 focus:border-red-500 focus:outline-none"
+                autoFocus
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full text-sm font-semibold"
+              >
+                Go
+              </button>
+            </form>
+
+            {/* Mobile Search Results */}
+            {showResults && (
+              <div className="bg-zinc-900 rounded-lg border border-zinc-700 max-h-[400px] overflow-y-auto">
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-red-500"></div>
+                  </div>
+                ) : searchResults.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                    <div className="text-5xl mb-3">{searchType === 'users' ? '👤' : '🎬'}</div>
+                    <div className="font-semibold mb-1">No {searchType} found</div>
+                    <div className="text-sm">Try searching for something else</div>
+                  </div>
+                ) : searchType === 'users' ? (
+                  <div className="divide-y divide-zinc-700">
+                    {searchResults.map((user) => (
+                      <div
+                        key={user._id}
+                        onClick={() => handleUserClick(user.username)}
+                        className="flex items-center justify-between px-4 py-3 hover:bg-zinc-800 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-red-600 to-red-700 flex items-center justify-center text-white font-bold flex-shrink-0">
+                            {user.profilePicture && user.profilePicture !== 'https://via.placeholder.com/150' ? (
+                              <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
+                            ) : (
+                              user.name.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-white truncate text-sm">{user.name}</div>
+                            <div className="text-xs text-gray-400 truncate">@{user.username}</div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleFollowToggle(user._id, user.isFollowing);
+                          }}
+                          className={`px-3 py-1 rounded-lg font-semibold text-xs transition-all ${
+                            user.isFollowing
+                              ? 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
+                              : 'bg-red-600 text-white hover:bg-red-700'
+                          }`}
+                        >
+                          {user.isFollowing ? 'Following' : 'Follow'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3 p-3">
+                    {searchResults.slice(0, 8).map((movie) => (
+                      <div
+                        key={movie.imdbID}
+                        onClick={() => handleMovieClick(movie.imdbID)}
+                        className="cursor-pointer"
+                      >
+                        <div className="aspect-[2/3] rounded-lg overflow-hidden bg-zinc-800 mb-1">
+                          <img
+                            src={movie.Poster !== 'N/A' ? movie.Poster : 'https://via.placeholder.com/150x225?text=No+Poster'}
+                            alt={movie.Title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="text-sm font-semibold text-white line-clamp-2">{movie.Title}</div>
+                        <div className="text-xs text-gray-400">{movie.Year}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+
         {/* Mobile Menu */}
         {isAuthenticated && showMobileMenu && (
           <div className="lg:hidden mt-4 bg-zinc-800/95 rounded-2xl border border-zinc-700 overflow-hidden animate-fadeIn">
@@ -445,6 +615,7 @@ function NavBar({ onSearch }) {
               </div>
             </div>
 
+
             {/* Mobile Menu Links */}
             <div className="py-2">
               <Link
@@ -461,6 +632,7 @@ function NavBar({ onSearch }) {
                 </div>
               </Link>
 
+
               <Link
                 to="/favorites"
                 className={`block px-4 py-3 text-gray-300 hover:bg-zinc-700 hover:text-white transition-colors ${
@@ -474,6 +646,7 @@ function NavBar({ onSearch }) {
                   Favorites
                 </div>
               </Link>
+
 
               <Link
                 to="/playlists"
@@ -489,6 +662,7 @@ function NavBar({ onSearch }) {
                 </div>
               </Link>
 
+
               <Link
                 to={`/user/${user?.username}`}
                 className="block px-4 py-3 text-gray-300 hover:bg-zinc-700 hover:text-white transition-colors"
@@ -500,6 +674,7 @@ function NavBar({ onSearch }) {
                   My Profile
                 </div>
               </Link>
+
 
               <Link
                 to="/profile"
@@ -516,6 +691,7 @@ function NavBar({ onSearch }) {
                 </div>
               </Link>
 
+
               <button
                 onClick={handleLogout}
                 className="w-full text-left px-4 py-3 text-red-400 hover:bg-zinc-700 hover:text-red-300 transition-colors"
@@ -531,6 +707,7 @@ function NavBar({ onSearch }) {
           </div>
         )}
       </div>
+
 
       <style jsx>{`
         @keyframes fadeIn {
@@ -550,5 +727,6 @@ function NavBar({ onSearch }) {
     </nav>
   );
 }
+
 
 export default NavBar;

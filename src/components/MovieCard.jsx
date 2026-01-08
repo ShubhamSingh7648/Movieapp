@@ -7,13 +7,12 @@ function MovieCard({ movie }) {
   const navigate = useNavigate();
   const { isFavorite, addToFavorite, removeFromFavorite } = useMovieContext();
   const favorite = isFavorite(movie.imdbID);
-  
   const [showPlaylistMenu, setShowPlaylistMenu] = useState(false);
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ show: false, text: '', type: '' });
+  const [imageError, setImageError] = useState(false);
 
-  // Load playlists when menu opens
   useEffect(() => {
     if (showPlaylistMenu) {
       loadPlaylists();
@@ -42,8 +41,6 @@ function MovieCard({ movie }) {
         Poster: movie.Poster,
         Type: movie.Type
       });
-      
-      // Show success message
       setMessage({ show: true, text: 'Added!', type: 'success' });
       setTimeout(() => {
         setMessage({ show: false, text: '', type: '' });
@@ -62,166 +59,143 @@ function MovieCard({ movie }) {
     else addToFavorite(movie);
   }
 
-  // Navigate to movie details
   const handleCardClick = () => {
     navigate(`/movie/${movie.imdbID}`);
   };
 
-  // Close menu when clicking outside
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  const hasPoster = movie.Poster && movie.Poster !== 'N/A' && !imageError;
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (showPlaylistMenu && !event.target.closest('.playlist-menu-container')) {
         setShowPlaylistMenu(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showPlaylistMenu]);
 
   return (
     <div 
+      className="relative rounded-lg overflow-hidden cursor-pointer transition-all duration-300 hover:scale-105 hover:z-10 hover:shadow-2xl bg-[#1a1a1a] group"
       onClick={handleCardClick}
-      className="group relative bg-zinc-800/50 backdrop-blur-sm rounded-xl md:rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-red-600/20 transition-all duration-300 hover:-translate-y-2 border border-zinc-700/50 hover:border-red-600/50 cursor-pointer"
     >
-      {/* Movie Poster */}
-      <div className="relative aspect-[2/3] overflow-hidden bg-zinc-900">
-        <img 
-          src={movie.Poster !== "N/A" ? movie.Poster : "https://via.placeholder.com/300x450?text=No+Poster"} 
-          alt={movie.Title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        />
+      {/* Poster Container */}
+      <div className="relative w-full pb-[150%] bg-[#2a2a2a] overflow-hidden">
+        {hasPoster ? (
+          <img 
+            src={movie.Poster} 
+            alt={movie.Title}
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+            onError={handleImageError}
+            loading="lazy"
+          />
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#1a1a1a] to-[#2d2d2d] p-4 md:p-5 text-center">
+            <div className="text-4xl md:text-5xl lg:text-6xl mb-3 md:mb-4 opacity-30">🎬</div>
+            <div className="text-sm md:text-base lg:text-lg font-semibold text-gray-200 mb-2 line-clamp-3 px-2">
+              {movie.Title}
+            </div>
+            <div className="text-xs md:text-sm text-gray-400">{movie.Year}</div>
+          </div>
+        )}
         
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 via-transparent to-transparent opacity-60"></div>
-        
-        {/* Action Buttons Container */}
-        <div className="absolute top-2 md:top-3 right-2 md:right-3 flex flex-col gap-1.5 md:gap-2 z-10">
-          {/* Favorite Button */}
-          <button
-            onClick={onFavoriteClick}
-            className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 transform hover:scale-110 active:scale-95 ${
-              favorite 
-                ? "bg-red-600 text-white shadow-lg shadow-red-600/50" 
-                : "bg-zinc-900/70 text-gray-400 hover:bg-zinc-800 hover:text-red-500"
-            }`}
-            aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
-          >
-            <svg 
-              className={`w-4 h-4 md:w-5 md:h-5 transition-transform duration-300 ${favorite ? 'scale-110' : ''}`}
-              fill={favorite ? "currentColor" : "none"}
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" 
-              />
-            </svg>
-          </button>
-
-          {/* Add to Playlist Button */}
-          <div className="relative playlist-menu-container">
+        {/* Hover Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-start p-3 md:p-4">
+          {/* Action Buttons */}
+          <div className="flex gap-2 justify-end">
             <button
+              className={`w-8 h-8 md:w-10 md:h-10 rounded-full border-2 flex items-center justify-center transition-all duration-300 hover:scale-110 ${
+                favorite 
+                  ? 'border-red-600 bg-red-600/30' 
+                  : 'border-white/70 bg-black/70'
+              }`}
+              onClick={onFavoriteClick}
+              title={favorite ? "Remove from favorites" : "Add to favorites"}
+            >
+              <span className="text-base md:text-lg">{favorite ? '❤️' : '🤍'}</span>
+            </button>
+            
+            <button
+              className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-white/70 bg-black/70 flex items-center justify-center transition-all duration-300 hover:scale-110 hover:bg-black/90 hover:border-white text-base md:text-lg"
               onClick={(e) => {
                 e.stopPropagation();
                 setShowPlaylistMenu(!showPlaylistMenu);
               }}
-              className="w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center backdrop-blur-md bg-zinc-900/70 text-gray-400 hover:bg-zinc-800 hover:text-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95"
-              aria-label="Add to playlist"
+              title="Add to playlist"
             >
-              <svg 
-                className="w-4 h-4 md:w-5 md:h-5" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M12 4v16m8-8H4" 
-                />
-              </svg>
+              ➕
             </button>
+          </div>
 
-            {/* Playlist Dropdown Menu */}
-            {showPlaylistMenu && (
-              <div className="absolute right-0 mt-2 w-48 md:w-56 bg-zinc-900 rounded-lg md:rounded-xl shadow-2xl border border-zinc-700 overflow-hidden z-50">
-                <div className="p-2 md:p-3 border-b border-zinc-700">
-                  <h3 className="text-xs md:text-sm font-semibold text-white">Add to Playlist</h3>
+          {/* Playlist Menu */}
+          {showPlaylistMenu && (
+            <div 
+              className="playlist-menu-container absolute top-12 md:top-14 right-2 z-50"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-[#141414]/98 border border-gray-700 rounded-lg min-w-[180px] md:min-w-[200px] max-w-[220px] md:max-w-[250px] overflow-hidden shadow-2xl">
+                <div className="flex justify-between items-center px-3 md:px-4 py-2 md:py-3 bg-[#1a1a1a] border-b border-gray-700 font-semibold text-xs md:text-sm text-gray-200">
+                  <span>Add to Playlist</span>
+                  <button
+                    className="text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-all w-5 h-5 md:w-6 md:h-6 flex items-center justify-center text-base md:text-lg"
+                    onClick={() => setShowPlaylistMenu(false)}
+                  >
+                    ✕
+                  </button>
                 </div>
                 
+                {loading ? (
+                  <div className="p-4 md:p-5 text-center text-gray-400 text-xs md:text-sm">Loading...</div>
+                ) : playlists.length === 0 ? (
+                  <div className="p-4 md:p-5 text-center text-gray-400 text-xs md:text-sm">No playlists yet</div>
+                ) : (
+                  <div className="max-h-[180px] md:max-h-[200px] overflow-y-auto">
+                    {playlists.map((playlist) => (
+                      <button
+                        key={playlist._id}
+                        className="w-full px-3 md:px-4 py-2 md:py-3 text-left text-gray-200 hover:bg-[#2a2a2a] transition-colors text-xs md:text-sm flex items-center gap-2"
+                        onClick={(e) => handleAddToPlaylist(playlist._id, e)}
+                      >
+                        <span className="text-sm md:text-base">📋</span> {playlist.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {message.show && (
-                  <div className={`mx-2 md:mx-3 mt-2 md:mt-3 p-2 rounded-lg text-xs ${
+                  <div className={`px-3 md:px-4 py-2 text-center text-xs md:text-sm font-semibold border-t border-gray-700 ${
                     message.type === 'success' 
-                      ? 'bg-green-500/10 text-green-400 border border-green-500/50' 
-                      : 'bg-red-500/10 text-red-400 border border-red-500/50'
+                      ? 'bg-green-900/20 text-green-400' 
+                      : 'bg-red-900/20 text-red-400'
                   }`}>
                     {message.text}
                   </div>
                 )}
-                
-                <div className="max-h-48 md:max-h-64 overflow-y-auto">
-                  {loading ? (
-                    <div className="p-4 text-center">
-                      <div className="inline-block animate-spin rounded-full h-5 w-5 md:h-6 md:w-6 border-t-2 border-b-2 border-red-600"></div>
-                    </div>
-                  ) : playlists.length === 0 ? (
-                    <div className="p-3 md:p-4 text-center">
-                      <p className="text-gray-400 text-xs md:text-sm mb-2">No playlists yet</p>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowPlaylistMenu(false);
-                          window.location.href = '/playlists';
-                        }}
-                        className="text-xs text-red-500 hover:text-red-400"
-                      >
-                        Create playlist
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="py-1">
-                      {playlists.map((playlist) => (
-                        <button
-                          key={playlist._id}
-                          onClick={(e) => handleAddToPlaylist(playlist._id, e)}
-                          className="w-full px-3 md:px-4 py-2 md:py-2.5 text-left text-xs md:text-sm text-gray-300 hover:bg-zinc-800 hover:text-white transition-colors flex items-center justify-between group"
-                        >
-                          <span className="truncate">{playlist.name}</span>
-                          <span className="text-xs text-gray-500 group-hover:text-gray-400 ml-2">
-                            {playlist.movies?.length || 0}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Year Badge */}
-        <div className="absolute top-2 md:top-3 left-2 md:left-3 bg-zinc-900/80 backdrop-blur-md px-2 py-0.5 md:px-3 md:py-1 rounded-full text-xs font-semibold text-gray-300 border border-zinc-700/50">
-          {movie.Year}
+            </div>
+          )}
         </div>
       </div>
-      
+
       {/* Movie Info */}
-      <div className="p-3 md:p-4">
-        <h3 className="text-white font-bold text-xs md:text-sm line-clamp-2 mb-1 group-hover:text-red-500 transition-colors duration-300">
+      <div className="p-2 md:p-3 bg-[#1a1a1a]">
+        <h3 className="text-sm md:text-base font-semibold text-gray-200 mb-1 md:mb-1.5 line-clamp-2" title={movie.Title}>
           {movie.Title}
         </h3>
-        
-        {movie.Type && (
-          <p className="text-gray-500 text-xs uppercase tracking-wider">
-            {movie.Type}
-          </p>
-        )}
+        <div className="flex items-center gap-1 md:gap-1.5 text-xs md:text-sm text-gray-400">
+          <span>{movie.Year}</span>
+          {movie.Type && (
+            <>
+              <span className="text-gray-600">•</span>
+              <span className="capitalize">{movie.Type}</span>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

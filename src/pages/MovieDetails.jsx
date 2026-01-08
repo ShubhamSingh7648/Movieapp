@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getMovieDetails, getPlaylists, addMovieToPlaylist } from '../services/api';
+import { getMovieDetails, getPlaylists, addMovieToPlaylist, trackInteraction } from '../services/api';
 import { useMovieContext } from '../contexts/MovieContext';
+
+
 
 function MovieDetails() {
   const { imdbID } = useParams();
@@ -15,9 +17,32 @@ function MovieDetails() {
   const [playlists, setPlaylists] = useState([]);
   const [message, setMessage] = useState({ show: false, text: '', type: '' });
 
+
+  // ✨ Load movie details
   useEffect(() => {
     loadMovieDetails();
   }, [imdbID]);
+
+  // ✨ Track movie view when page loads
+  useEffect(() => {
+    const trackView = async () => {
+      if (imdbID && movie) {
+        try {
+          await trackInteraction(imdbID, 'view');
+          console.log('✅ Tracked view for:', movie.Title);
+        } catch (error) {
+          // Silently fail - tracking is not critical
+          console.error('❌ Failed to track view:', error);
+        }
+      }
+    };
+    
+    // Only track after movie is loaded
+    if (movie) {
+      trackView();
+    }
+  }, [imdbID, movie]);
+
 
   const loadMovieDetails = async () => {
     try {
@@ -33,6 +58,7 @@ function MovieDetails() {
     }
   };
 
+
   const loadPlaylists = async () => {
     try {
       const data = await getPlaylists();
@@ -41,6 +67,7 @@ function MovieDetails() {
       console.error('Failed to load playlists:', err);
     }
   };
+
 
   const handleAddToPlaylist = async (playlistId) => {
     try {
@@ -51,6 +78,14 @@ function MovieDetails() {
         Poster: movie.Poster,
         Type: movie.Type
       });
+      
+      // ✨ Track playlist interaction
+      try {
+        await trackInteraction(movie.imdbID, 'playlist');
+        console.log('✅ Tracked playlist interaction for:', movie.Title);
+      } catch (err) {
+        console.error('❌ Failed to track playlist interaction:', err);
+      }
       
       setMessage({ show: true, text: 'Added to playlist!', type: 'success' });
       setTimeout(() => {
@@ -63,6 +98,7 @@ function MovieDetails() {
     }
   };
 
+
   const handleFavoriteClick = () => {
     const movieData = {
       imdbID: movie.imdbID,
@@ -71,6 +107,7 @@ function MovieDetails() {
       Poster: movie.Poster,
       Type: movie.Type
     };
+
 
     if (isFavorite(movie.imdbID)) {
       removeFromFavorite(movie.imdbID);
@@ -82,12 +119,14 @@ function MovieDetails() {
     setTimeout(() => setMessage({ show: false, text: '', type: '' }), 2000);
   };
 
+
   const handlePlaylistClick = () => {
     setShowPlaylistMenu(!showPlaylistMenu);
     if (!showPlaylistMenu) {
       loadPlaylists();
     }
   };
+
 
   if (loading) {
     return (
@@ -99,6 +138,7 @@ function MovieDetails() {
       </div>
     );
   }
+
 
   if (error || !movie) {
     return (
@@ -117,7 +157,9 @@ function MovieDetails() {
     );
   }
 
+
   const favorite = isFavorite(movie.imdbID);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-zinc-900 via-zinc-900 to-black">
@@ -134,6 +176,7 @@ function MovieDetails() {
         </button>
       </div>
 
+
       {/* Message Toast */}
       {message.show && (
         <div className="fixed top-24 right-4 z-50 animate-slideIn">
@@ -146,6 +189,7 @@ function MovieDetails() {
           </div>
         </div>
       )}
+
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 pb-12">
@@ -164,6 +208,7 @@ function MovieDetails() {
               </div>
             </div>
           </div>
+
 
           {/* RIGHT SIDE - Movie Details */}
           <div className="lg:col-span-2 space-y-8">
@@ -190,6 +235,7 @@ function MovieDetails() {
                 )}
               </div>
 
+
               {/* Genre Tags */}
               {movie.Genre !== "N/A" && (
                 <div className="flex flex-wrap gap-2 mb-6">
@@ -204,6 +250,7 @@ function MovieDetails() {
                 </div>
               )}
             </div>
+
 
             {/* Ratings Section */}
             <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-700/50">
@@ -222,6 +269,7 @@ function MovieDetails() {
                   </div>
                 )}
 
+
                 {/* Other Ratings */}
                 {movie.Ratings && movie.Ratings.map((rating, idx) => (
                   <div key={idx} className="bg-zinc-900/70 rounded-xl p-4 border border-zinc-700/50">
@@ -236,6 +284,7 @@ function MovieDetails() {
                 ))}
               </div>
             </div>
+
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
@@ -253,6 +302,7 @@ function MovieDetails() {
                 {favorite ? 'Remove from Favorites' : 'Add to Favorites'}
               </button>
 
+
               <div className="flex-1 relative">
                 <button
                   onClick={handlePlaylistClick}
@@ -263,6 +313,7 @@ function MovieDetails() {
                   </svg>
                   Add to Playlist
                 </button>
+
 
                 {/* Playlist Dropdown */}
                 {showPlaylistMenu && (
@@ -304,6 +355,7 @@ function MovieDetails() {
               </div>
             </div>
 
+
             {/* Plot */}
             {movie.Plot !== "N/A" && (
               <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-700/50">
@@ -316,6 +368,7 @@ function MovieDetails() {
               </div>
             )}
 
+
             {/* Director and Writer */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {movie.Director !== "N/A" && (
@@ -327,6 +380,7 @@ function MovieDetails() {
                 </div>
               )}
 
+
               {movie.Writer !== "N/A" && (
                 <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-700/50">
                   <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
@@ -336,6 +390,7 @@ function MovieDetails() {
                 </div>
               )}
             </div>
+
 
             {/* Cast */}
             {movie.Actors !== "N/A" && (
@@ -359,6 +414,7 @@ function MovieDetails() {
               </div>
             )}
 
+
             {/* Additional Info */}
             <div className="bg-zinc-800/50 backdrop-blur-sm rounded-2xl p-6 border border-zinc-700/50">
               <h3 className="text-xl font-bold text-white mb-4">Additional Information</h3>
@@ -371,12 +427,14 @@ function MovieDetails() {
                   </div>
                 )}
 
+
                 {movie.Country !== "N/A" && (
                   <div>
                     <div className="text-gray-500 text-sm mb-1">Country</div>
                     <div className="text-gray-300 font-medium">{movie.Country}</div>
                   </div>
                 )}
+
 
                 {movie.Released !== "N/A" && (
                   <div>
@@ -385,12 +443,14 @@ function MovieDetails() {
                   </div>
                 )}
 
+
                 {movie.BoxOffice !== "N/A" && (
                   <div>
                     <div className="text-gray-500 text-sm mb-1">Box Office</div>
                     <div className="text-gray-300 font-medium">{movie.BoxOffice}</div>
                   </div>
                 )}
+
 
                 {movie.Awards !== "N/A" && (
                   <div className="md:col-span-2">
@@ -401,9 +461,11 @@ function MovieDetails() {
               </div>
             </div>
 
+
           </div>
         </div>
       </div>
+
 
       <style jsx>{`
         @keyframes slideIn {
@@ -423,5 +485,6 @@ function MovieDetails() {
     </div>
   );
 }
+
 
 export default MovieDetails;

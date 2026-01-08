@@ -1,14 +1,17 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
-import { getFavorites, addToFavorites, removeFromFavorites } from "../services/api";
+import { getFavorites, addToFavorites, removeFromFavorites, trackInteraction } from "../services/api";
 import { useAuth } from "./authContext";
+
 
 const MovieContext = createContext();
 export const useMovieContext = () => useContext(MovieContext);
+
 
 export const MovieProvider = ({ children }) => {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+
 
   // Load favorites from backend when user logs in
   useEffect(() => {
@@ -19,6 +22,7 @@ export const MovieProvider = ({ children }) => {
       setLoading(false);
     }
   }, [user]);
+
 
   const loadFavorites = async () => {
     try {
@@ -33,6 +37,7 @@ export const MovieProvider = ({ children }) => {
     }
   };
 
+
   const addToFavorite = async (movie) => {
     try {
       // Optimistic update
@@ -46,6 +51,16 @@ export const MovieProvider = ({ children }) => {
         Poster: movie.Poster,
         Type: movie.Type
       });
+      
+      // ✨ Track interaction (marks recommendations as stale)
+      try {
+        await trackInteraction(movie.imdbID, 'favorite');
+        console.log('✅ Tracked favorite interaction for:', movie.Title);
+      } catch (err) {
+        console.error('❌ Failed to track favorite interaction:', err);
+        // Don't throw - tracking is not critical
+      }
+      
     } catch (error) {
       console.error("Failed to add to favorites:", error);
       // Revert on error
@@ -53,6 +68,7 @@ export const MovieProvider = ({ children }) => {
       throw error;
     }
   };
+
 
   const removeFromFavorite = async (movieId) => {
     try {
@@ -70,9 +86,11 @@ export const MovieProvider = ({ children }) => {
     }
   };
 
+
   const isFavorite = (movieId) => {
     return favorites.some((movie) => movie.imdbID === movieId);
   };
+
 
   const value = {
     favorites,
@@ -82,6 +100,7 @@ export const MovieProvider = ({ children }) => {
     isFavorite,
     refreshFavorites: loadFavorites,
   };
+
 
   return (
     <MovieContext.Provider value={value}>

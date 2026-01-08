@@ -15,7 +15,6 @@ const getAuthToken = () => {
 // ================= AUTH FETCH =================
 const authFetch = async (url, options = {}) => {
   const token = getAuthToken();
-
   const headers = {
     "Content-Type": "application/json",
     ...options.headers,
@@ -77,11 +76,9 @@ export const getMovieDetails = async (imdbID) => {
       `${OMDB_BASE_URL}?i=${imdbID}&plot=full&apikey=${OMDB_API_KEY}`
     );
     const data = await res.json();
-    
     if (data.Response === "False") {
       throw new Error(data.Error || "Movie not found");
     }
-    
     return data;
   } catch (error) {
     console.error("OMDB API Error:", error);
@@ -239,4 +236,28 @@ export const searchUsers = async (query) => {
 
 export const getUserProfile = async (username) => {
   return authFetch(`${API_BASE_URL}/api/search/profile/${username}`);
+};
+
+// ================= RECOMMENDATION APIs ✨ NEW =================
+export const getRecommendations = async () => {
+  return authFetch(`${API_BASE_URL}/api/recommendations`);
+};
+
+export const generateRecommendations = async () => {
+  return authFetch(`${API_BASE_URL}/api/recommendations/generate`, {
+    method: "POST",
+  });
+};
+
+// ================= INTERACTION TRACKING APIs ✨ NEW =================
+export const trackInteraction = async (movieId, interactionType) => {
+  return authFetch(`${API_BASE_URL}/api/interactions`, {
+    method: "POST",
+    body: JSON.stringify({ movieId, interactionType }),
+  });
+};
+
+export const getUserInteractions = async (type = null) => {
+  const query = type ? `?type=${type}` : '';
+  return authFetch(`${API_BASE_URL}/api/interactions${query}`);
 };
