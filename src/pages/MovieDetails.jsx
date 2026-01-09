@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getMovieDetails, getPlaylists, addMovieToPlaylist, trackInteraction, getMovieTrailer } from '../services/api';
 import { useMovieContext } from '../contexts/MovieContext';
+import ShareModal from '../components/ShareModal';
 
 function MovieDetails() {
   const { imdbID } = useParams();
@@ -16,8 +17,8 @@ function MovieDetails() {
   const [message, setMessage] = useState({ show: false, text: '', type: '' });
   const [trailer, setTrailer] = useState(null);
   const [trailerLoading, setTrailerLoading] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
-  // Ref for smooth scrolling to trailer
   const trailerRef = useRef(null);
 
   useEffect(() => {
@@ -123,7 +124,6 @@ function MovieDetails() {
     if (!showPlaylistMenu) loadPlaylists();
   };
 
-  // Smooth scroll to trailer
   const handlePlayTrailer = () => {
     if (trailer && trailerRef.current) {
       trailerRef.current.scrollIntoView({ 
@@ -132,6 +132,12 @@ function MovieDetails() {
       });
     }
   };
+
+  const handleShareClick = () => {
+    setShowShareModal(true);
+  };
+
+  const shareUrl = `${window.location.origin}/movie/${imdbID}`;
 
   if (loading) {
     return (
@@ -172,7 +178,7 @@ function MovieDetails() {
         </div>
       )}
 
-      {/* Hero Section with BUTTONS INSIDE */}
+      {/* Hero Section */}
       <div className="relative min-h-[500px] md:min-h-[600px] lg:min-h-[70vh] overflow-hidden bg-gradient-to-b from-black to-gray-900">
         
         {/* Backdrop with Blur */}
@@ -185,7 +191,7 @@ function MovieDetails() {
           }}
         />
         
-        {/* Content - With Buttons */}
+        {/* Content */}
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 lg:py-10">
           <div className="flex flex-col md:flex-row items-start gap-6 md:gap-8">
             
@@ -200,7 +206,7 @@ function MovieDetails() {
               </div>
             </div>
 
-            {/* Movie Info WITH BUTTONS */}
+            {/* Movie Info */}
             <div className="flex-1 text-white text-center md:text-left">
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black mb-3 drop-shadow-2xl leading-tight">
                 {movie.Title}
@@ -231,29 +237,32 @@ function MovieDetails() {
                 </div>
               )}
 
-              {/* LIMITED Plot Description - Max 3 lines */}
+              {/* Plot Description */}
               {movie.Plot && movie.Plot !== "N/A" && (
                 <p className="text-xs md:text-sm lg:text-base text-gray-300 leading-relaxed max-w-3xl mb-6 line-clamp-3">
                   {movie.Plot}
                 </p>
               )}
 
-              {/* ACTION BUTTONS - INSIDE HERO! */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
+              {/* ACTION BUTTONS - ALL 4 IN ONE LINE */}
+              <div className="flex flex-wrap gap-3 justify-center md:justify-start">
+                
+                {/* Play Trailer */}
                 <button 
-                  className="px-6 md:px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                   onClick={handlePlayTrailer}
                   disabled={!trailer}
                 >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
                   </svg>
-                  <span className="text-sm md:text-base">Play Trailer</span>
+                  <span>Play Trailer</span>
                 </button>
                 
+                {/* Add/Remove Favorites */}
                 <button
                   onClick={handleFavoriteClick}
-                  className={`px-6 md:px-8 py-3 font-bold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-sm md:text-base ${
+                  className={`px-4 py-2.5 font-bold rounded-lg transition-all shadow-md hover:shadow-lg transform hover:scale-105 text-sm ${
                     favorite
                       ? 'bg-red-600 text-white hover:bg-red-700'
                       : 'bg-white text-gray-800 hover:bg-gray-100'
@@ -262,10 +271,11 @@ function MovieDetails() {
                   {favorite ? 'Remove from Favorites' : 'Add to Favorites'}
                 </button>
 
+                {/* Add to Playlist */}
                 <div className="relative">
                   <button
                     onClick={handlePlaylistClick}
-                    className="w-full px-6 md:px-8 py-3 bg-white hover:bg-gray-100 text-gray-800 font-bold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105 text-sm md:text-base"
+                    className="px-4 py-2.5 bg-white hover:bg-gray-100 text-gray-800 font-bold rounded-lg transition-all shadow-md hover:shadow-lg transform hover:scale-105 text-sm"
                   >
                     Add to Playlist
                   </button>
@@ -300,6 +310,18 @@ function MovieDetails() {
                     </div>
                   )}
                 </div>
+
+                {/* Share Button */}
+                <button
+                  onClick={handleShareClick}
+                  className="px-4 py-2.5 bg-white hover:bg-gray-100 text-gray-800 font-bold rounded-lg transition-all shadow-md hover:shadow-lg transform hover:scale-105 text-sm flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                  </svg>
+                  <span>Share</span>
+                </button>
+
               </div>
             </div>
           </div>
@@ -309,7 +331,7 @@ function MovieDetails() {
       {/* Main Content Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
 
-        {/* 🎬 TRAILER SECTION - WITH REF FOR SCROLLING */}
+        {/* Trailer Section */}
         <div ref={trailerRef}>
           {trailerLoading ? (
             <div className="w-full aspect-video bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl flex items-center justify-center mb-8 border-4 border-gray-300 shadow-2xl">
@@ -510,6 +532,14 @@ function MovieDetails() {
 
       </div>
 
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        shareUrl={shareUrl}
+        title={movie.Title}
+      />
+
       <style jsx>{`
         @keyframes slideIn {
           from { transform: translateX(100%); opacity: 0; }
@@ -519,6 +549,7 @@ function MovieDetails() {
           animation: slideIn 0.3s ease-out;
         }
       `}</style>
+      
     </div>
   );
 }
