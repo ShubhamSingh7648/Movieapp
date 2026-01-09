@@ -280,3 +280,43 @@ export const getMovieTrailer = async (imdbID) => {
     return null;
   }
 };
+
+// Add this new function in api.js
+export const getMovieCredits = async (imdbID) => {
+  try {
+    // First, search for the movie by IMDb ID to get TMDB ID
+    const searchResponse = await fetch(
+      `${TMDB_BASE_URL}/find/${imdbID}?api_key=${TMDB_API_KEY}&external_source=imdb_id`
+    );
+    const searchData = await searchResponse.json();
+    
+    // Get the TMDB ID from results
+    const tmdbMovie = searchData.movie_results[0] || searchData.tv_results[0];
+    if (!tmdbMovie) {
+      throw new Error('Movie not found in TMDB');
+    }
+    
+    const tmdbId = tmdbMovie.id;
+    
+    // Get credits (cast & crew) using TMDB ID
+    const creditsResponse = await fetch(
+      `${TMDB_BASE_URL}/movie/${tmdbId}/credits?api_key=${TMDB_API_KEY}`
+    );
+    const creditsData = await creditsResponse.json();
+    
+    return {
+      cast: creditsData.cast || [],
+      crew: creditsData.crew || []
+    };
+  } catch (error) {
+    console.error('Error fetching movie credits:', error);
+    throw error;
+  }
+};
+
+// Helper function to build TMDB image URL
+export const getTMDBImageUrl = (path, size = 'w185') => {
+  if (!path) return null;
+  return `https://image.tmdb.org/t/p/${size}${path}`;
+};
+
